@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.image as mpimg
 
 IMG_SHAPE = (160, 320, 3)
-SUBSAMPLING = 5
+SUBSAMPLING = 2
 
 
 def load_data(path):
@@ -74,6 +74,8 @@ def dump_data(path, data):
 def save_np_data(path, data):
     """Save data as npz file.
     """
+    filename = path + 'data.npz'
+    np.savez(filename, **data)
 
 
 def main():
@@ -81,7 +83,8 @@ def main():
 
     # Load data and 'pickle' dump.
     data = load_data(path)
-    dump_data(path, data)
+    save_np_data(path, data)
+    # dump_data(path, data)
 
 if __name__ == '__main__':
     main()
