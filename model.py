@@ -8,13 +8,14 @@ import math
 import numpy as np
 
 import keras
-from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras.utils.io_utils import HDF5Matrix
+
+from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
@@ -178,7 +179,8 @@ def train_model(filename, split=16000):
     # Save model parameters and arch.
     model.save('model.h5')
     with open('model.json', 'w') as f:
-        json.dump(model.to_json(), f, indent=4, separators=(',', ': '))
+        json.dump(json.loads(model.to_json()), f,
+                  indent=4, separators=(',', ': '))
 
 
 def main():

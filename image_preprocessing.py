@@ -13,7 +13,7 @@ from six.moves import range
 import os
 import threading
 
-from .. import backend as K
+from keras import backend as K
 
 
 def random_rotation(x, rg, row_index=1, col_index=2, channel_index=0,
