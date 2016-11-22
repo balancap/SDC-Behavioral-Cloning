@@ -19,8 +19,8 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 64
-NB_EPOCHS = 1
+BATCH_SIZE = 128
+NB_EPOCHS = 10
 SEED = 4242
 
 # Image dimensions
@@ -41,7 +41,7 @@ def load_npz(filename, split=0.9):
     """
     data = np.load(filename)
     images = data['images'].astype(np.float32) / 255.
-    angle = data['angle']
+    angle = data['angle_sth8']
 
     # Split datasets.
     idxes = np.arange(images.shape[0])
@@ -112,9 +112,9 @@ def cnn_model(shape):
 
     # Flatten + FC layers.
     model.add(Flatten())
-    model.add(Dense(100))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dense(100))
+    # model.add(Activation('relu'))
+    # model.add(Dropout(0.5))
     model.add(Dense(50))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
@@ -126,7 +126,7 @@ def cnn_model(shape):
     return model
 
 
-def train_model(filename, split=16000):
+def train_model(filename):
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filename, split=0.9)
 
@@ -138,7 +138,8 @@ def train_model(filename, split=16000):
     model = cnn_model(X_train.shape[1:])
 
     # Train the model using SGD + momentum.
-    optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    optimizer = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    optimizer = keras.optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
     model.compile(optimizer=optimizer,
                   loss='mse',
                   metrics=['mean_absolute_error'])
@@ -188,10 +189,8 @@ def train_model(filename, split=16000):
 
 def main():
     np.random.seed(SEED)
-    filename = './data/1/dataset.npz'
-    split = 16000
-
-    train_model(filename, split)
+    filename = './data/4/dataset.npz'
+    train_model(filename)
 
 
 if __name__ == '__main__':

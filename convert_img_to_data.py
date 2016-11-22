@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.image as mpimg
 
 IMG_SHAPE = (160, 320, 3)
-SUBSAMPLING = 10
+SUBSAMPLING = 1
 
 
 # ============================================================================
@@ -50,7 +50,7 @@ def np_exp_conv(data, scale):
 # ============================================================================
 # Load / Save data: old way!
 # ============================================================================
-def load_data(path):
+def load_data(path, mask=True):
     """Load DATA from path: images + car information.
 
     Return:
@@ -95,12 +95,24 @@ def load_data(path):
                 idx_subsample += 1
         print('')
 
-        # Post processing angle: exponential smoothing.
-        scales = [1., 2., 4., 8., 16., 32., 64., 128.]
-        for s in scales:
-            data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
+    # Post-processing angle: exponential smoothing.
+    scales = [1., 2., 4., 8., 16., 32., 64., 128.]
+    for s in scales:
+        data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
 
-        return data
+    # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
+    if mask:
+        nb_frames = 15
+        shape = data['images'].shape
+        mask = np.zeros((shape[0], ), dtype=bool)
+        for i in range(shape[0]):
+            if data['angle'][i] != 0.:
+                mask[i:i+nb_frames] = True
+        # Apply mask.
+        for k in data.keys():
+            data[k] = data[k][mask]
+
+    return data
 
 
 def dump_data(path, data):
@@ -176,11 +188,11 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/1/'
+    path = './data/4/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path)
+    data = load_data(path, mask=True)
     save_np_data(path, data)
     # dump_data(path, data)
 
