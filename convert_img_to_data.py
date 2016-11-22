@@ -52,7 +52,6 @@ def load_data(path):
         for i, a in enumerate(csv_list):
             filename = a[0]
             if os.path.isfile(filename):
-                idx_subsample += 1
                 if idx_subsample % SUBSAMPLING == 0:
                     j = idx_subsample // SUBSAMPLING
                     sys.stdout.write('\r>> Converting image %d/%d' % (j+1, nb_imgs))
@@ -63,6 +62,7 @@ def load_data(path):
                     data['angle'][j] = float(a[3])
                     data['throttle'][j] = float(a[4])
                     data['speed'][j] = float(a[6])
+                idx_subsample += 1
         print('')
         return data
 
@@ -116,7 +116,6 @@ def create_hdf5(path):
         for a in csv_list:
             filename = a[0]
             if os.path.isfile(filename):
-                idx_subsample += 1
                 if idx_subsample % SUBSAMPLING == 0:
                     j = idx_subsample // SUBSAMPLING
                     sys.stdout.write('\r>> Converting image %d/%d' % (j+1, nb_imgs))
@@ -127,6 +126,7 @@ def create_hdf5(path):
                     angle[j] = float(a[3])
                     throttle[j] = float(a[4])
                     speed[j] = float(a[6])
+                idx_subsample += 1
         print('')
 
 
@@ -138,6 +138,7 @@ def main():
     # save_np_data(path, data)
     # dump_data(path, data)
 
+    # HDF5 dataset.
     create_hdf5(path)
 
 if __name__ == '__main__':
