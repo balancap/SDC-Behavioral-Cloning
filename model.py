@@ -21,6 +21,7 @@ from image_preprocessing import ImageDataGenerator
 # General parameters.
 BATCH_SIZE = 64
 NB_EPOCHS = 1
+SEED = 4242
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -43,9 +44,11 @@ def load_npz(filename, split=0.9):
     angle = data['angle']
 
     # Split datasets.
+    idxes = np.arange(images.shape[0])
+    np.random.shuffle(idxes)
     idx = int(images.shape[0] * split)
-    return (images[:idx, ...], angle[:idx],
-            images[idx:, ...], angle[idx:])
+    return (images[idxes[:idx]], angle[idxes[:idx]],
+            images[idxes[idx:]], angle[idxes[idx:]])
 
 
 def load_hdf5(filename, split=0.9):
@@ -184,6 +187,7 @@ def train_model(filename, split=16000):
 
 
 def main():
+    np.random.seed(SEED)
     filename = './data/1/dataset.npz'
     split = 16000
 

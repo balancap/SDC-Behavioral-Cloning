@@ -136,7 +136,8 @@ def create_hdf5(path):
                                                        SUBSAMPLING))
     nb_imgs = math.ceil(len(list_imgs) / float(SUBSAMPLING))
 
-    with h5py.File(path + 'dataset.hdf5', 'w') as f, open(path + 'driving_log.csv', 'r') as fcsv:
+    with h5py.File(path + 'dataset.hdf5', 'w') as f, \
+            open(path + 'driving_log.csv', 'r') as fcsv:
         # Create HDF5 dataset.
         images = f.create_dataset('images', (nb_imgs, *IMG_SHAPE), dtype='uint8')
         angle = f.create_dataset('angle', (nb_imgs, ), dtype='float32')
@@ -154,7 +155,8 @@ def create_hdf5(path):
             if os.path.isfile(filename):
                 if idx_subsample % SUBSAMPLING == 0:
                     j = idx_subsample // SUBSAMPLING
-                    sys.stdout.write('\r>> Converting image %d/%d' % (j+1, nb_imgs))
+                    sys.stdout.write('\r>> Converting image %d/%d' % (j+1,
+                                                                      nb_imgs))
                     sys.stdout.flush()
 
                     # Save data to HDF5.
