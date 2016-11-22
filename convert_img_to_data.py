@@ -14,7 +14,36 @@ import numpy as np
 import matplotlib.image as mpimg
 
 IMG_SHAPE = (160, 320, 3)
-SUBSAMPLING = 5
+SUBSAMPLING = 1
+
+
+# ============================================================================
+# Load / Save data: old way!
+# ============================================================================
+# @numba.jit(nopython=True, cache=True)
+def np_exp_conv(data, scale):
+    """Exponential convolution.
+
+    :param data: Numpy array of transactions volume.
+    :param scale: Exponential scaling parameter
+    """
+
+    N = data.size
+    r = np.zeros(N, np.float64)
+    if N == 0:
+        return r
+
+    cum_conv = 0.0
+    cum_vol = 0.0
+    for i in range(N):
+        if i >= 1:
+            cum_conv = cum_conv * np.exp(-1. / scale)
+            cum_vol = cum_vol * np.exp(-1. / scale)
+
+        cum_conv += data[i]
+        cum_vol += 1
+        r[i] = cum_conv / cum_vol
+    return r
 
 
 # ============================================================================
@@ -129,9 +158,17 @@ def create_hdf5(path):
                 idx_subsample += 1
         print('')
 
+        # Post processing angle: exponential smoothing.
+        scales = [1., 2., 4., 8., 16., 32., 64., 128.]
+        for s in scales:
+            angle_smooth = f.create_dataset('angle_sth%i' % s, (nb_imgs, ),
+                                            dtype='float32')
+            angle_smooth[:] = np_exp_conv(angle[()], s)
+
 
 def main():
     path = './data/1/'
+    print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
     # data = load_data(path)
