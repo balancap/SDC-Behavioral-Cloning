@@ -6,6 +6,7 @@ import sys
 import pickle
 import csv
 import h5py
+import numba
 
 import cv2
 import math
@@ -14,13 +15,13 @@ import numpy as np
 import matplotlib.image as mpimg
 
 IMG_SHAPE = (160, 320, 3)
-SUBSAMPLING = 1
+SUBSAMPLING = 10
 
 
 # ============================================================================
-# Load / Save data: old way!
+# Tools
 # ============================================================================
-# @numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def np_exp_conv(data, scale):
     """Exponential convolution.
 
@@ -99,7 +100,7 @@ def load_data(path):
 def dump_data(path, data):
     """Dump data using Pickle.
     """
-    filename = path + 'data.p'
+    filename = path + 'dataset.p'
     with open(filename, mode='wb') as f:
         pickle.dump(data, f)
 
@@ -107,7 +108,7 @@ def dump_data(path, data):
 def save_np_data(path, data):
     """Save data as npz file.
     """
-    filename = path + 'data.npz'
+    filename = path + 'dataset.npz'
     np.savez(filename, **data)
 
 
@@ -171,8 +172,8 @@ def main():
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    # data = load_data(path)
-    # save_np_data(path, data)
+    data = load_data(path)
+    save_np_data(path, data)
     # dump_data(path, data)
 
     # HDF5 dataset.

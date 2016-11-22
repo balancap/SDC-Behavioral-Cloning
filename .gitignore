@@ -2,3 +2,5 @@ behavioral-cloning.sublime-project
 behavioral-cloning.sublime-workspace
 data/
 .ipynb_checkpoints/
+__pycache__/
+logs/

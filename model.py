@@ -1,31 +1,85 @@
 """Keras Behavioral Cloning model.
 """
 import h5py
+import json
 
 import cv2
 import math
 import numpy as np
 
-
+import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD
 from keras.utils import np_utils
-
 from keras.utils.io_utils import HDF5Matrix
 
 
 # General parameters.
 BATCH_SIZE = 64
-NB_EPOCHS = 200
+NB_EPOCHS = 4
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
 IMG_CHANNELS = 3
 
 
+# ============================================================================
+# Load data
+# ============================================================================
+def load_npz(filename, split=0.9):
+    """Load data from Numpy .npz file and rescale images to [0, 1].
+    Args:
+      filename: dataset filename.
+      split: Split proportion between train / validation datasets.
+    Return:
+      (X_train, y_train, X_test, y_test) Numpy arrays.
+    """
+    data = np.load(filename)
+    images = data['images'].astype(np.float32) / 255.
+    angle = data['angle']
+
+    # Split datasets.
+    idx = int(images.shape[0] * split)
+    return (images[:idx, ...], angle[:idx],
+            images[idx:, ...], angle[idx:])
+
+
+def load_hdf5(filename, split=0.9):
+    """Load data from HDF5 file and rescale images to [0, 1].
+    Disclaimer: HDF5 dataset + Keras ImageDataGenerator do not seem to
+    go very well together...
+
+    Args:
+      filename: dataset filename.
+      split: Split proportion between train / validation datasets.
+    Return:
+      (X_train, y_train, X_test, y_test) Keras HDF5Matrix.
+    """
+    # Shape and split index
+    with h5py.File(filename, 'r') as f:
+        shape = f['images'].shape
+        idx = int(shape[0] * split)
+
+    def normalizer_fct(x):
+        return np.divide(np.float32(x), 255.)
+
+    # HDF5Matrix numpy style arrays.
+    X_train = HDF5Matrix(filename, 'images', start=0, end=idx,
+                         normalizer=normalizer_fct)
+    y_train = HDF5Matrix(filename, 'angle', start=0, end=idx)
+    X_test = HDF5Matrix(filename, 'images', start=idx, end=None,
+                        normalizer=normalizer_fct)
+    y_test = HDF5Matrix(filename, 'angle', start=idx, end=None)
+
+    return (X_train, y_train, X_test, y_test)
+
+
+# ============================================================================
+# Model and training
+# ============================================================================
 def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
@@ -69,17 +123,12 @@ def cnn_model(shape):
 
 
 def train_model(filename, split=16000):
-    # Load train and validation data from filename.
-    X_train = HDF5Matrix(filename, 'images',
-                         start=0, end=split, normalizer=np.float32)
-    y_train = HDF5Matrix(filename, 'angle', start=0, end=split)
-    X_test = HDF5Matrix(filename, 'images',
-                        start=split, end=None, normalizer=np.float32)
-    y_test = HDF5Matrix(filename, 'angle', start=split, end=None)
+    # Load dataset.
+    (X_train, y_train, X_test, y_test) = load_npz(filename, split=0.9)
 
-    print('X_train shape:', X_train.shape)
     print(X_train.shape[0], 'train samples')
     print(X_test.shape[0], 'test samples')
+    print('X_train shape:', X_train.shape)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
@@ -90,39 +139,50 @@ def train_model(filename, split=16000):
                   optimizer=sgd,
                   metrics=['mean_absolute_error'])
 
-    # X_train /= 255
-    # X_test /= 255
-
-    print('Using real-time data augmentation.')
-
-    # this will do preprocessing and realtime data augmentation
+    # Pre-processing and realtime data augmentation.
     datagen = ImageDataGenerator(
-        featurewise_center=False,  # set input mean to 0 over the dataset
-        samplewise_center=False,  # set each sample mean to 0
-        featurewise_std_normalization=False,  # divide inputs by std of the dataset
-        samplewise_std_normalization=False,  # divide each input by its std
-        zca_whitening=False,  # apply ZCA whitening
-        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
-        width_shift_range=0.,  # randomly shift images horizontally (fraction of total width)
-        height_shift_range=0.,  # randomly shift images vertically (fraction of total height)
-        horizontal_flip=False,  # randomly flip images
-        vertical_flip=False)  # randomly flip images
+        featurewise_center=False,   # Input mean to 0 over dataset.
+        samplewise_center=True,    # Each sample mean to 0.
+        featurewise_std_normalization=False,  # Divide inputs by STD of the dataset.
+        samplewise_std_normalization=True,   # Divide each input by its STD.
+        zca_whitening=False,        # Apply ZCA whitening
+        rotation_range=0,           # Randomly rotate images.
+        width_shift_range=0.,       # Random shift (fraction of total width).
+        height_shift_range=0.,      # Random shift (fraction of total height).
+        horizontal_flip=False,      # Random flip.
+        vertical_flip=False)        # Random flip.
 
-    # compute quantities required for featurewise normalization
+    # Compute quantities required for featurewise normalization.
     # (std, mean, and principal components if ZCA whitening is applied)
     # datagen.fit(X_train)
 
-    # fit the model on the batches generated by datagen.flow()
-    model.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
+    # Fit the model with batches generated by datagen.flow()
+    callbacks = [
+        keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0,
+                                    write_graph=True, write_images=True)
+    ]
+
+    model.fit_generator(datagen.flow(X_train, y_train,
+                                     batch_size=BATCH_SIZE,
+                                     shuffle=True),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCHS,
-                        validation_data=(X_test, y_test))
+                        verbose=1,
+                        validation_data=(X_test, y_test),
+                        callbacks=callbacks,
+                        max_q_size=10,
+                        nb_worker=1,
+                        pickle_safe=False)
 
     # model.fit(X_train, y_train, batch_size=32, shuffle='batch')
+    # Save model parameters and arch.
+    model.save('model.h5')
+    with open('model.json', 'w') as f:
+        json.dump(model.to_json(), f)
 
 
 def main():
-    filename = './data/1/dataset.hdf5'
+    filename = './data/1/dataset.npz'
     split = 16000
 
     train_model(filename, split)
