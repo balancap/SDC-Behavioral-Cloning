@@ -19,7 +19,7 @@ from keras.utils.io_utils import HDF5Matrix
 
 # General parameters.
 BATCH_SIZE = 64
-NB_EPOCHS = 4
+NB_EPOCHS = 1
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -134,9 +134,9 @@ def train_model(filename, split=16000):
     model = cnn_model(X_train.shape[1:])
 
     # Train the model using SGD + momentum.
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='mse',
-                  optimizer=sgd,
+    optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer=optimizer,
+                  loss='mse',
                   metrics=['mean_absolute_error'])
 
     # Pre-processing and realtime data augmentation.
@@ -178,7 +178,7 @@ def train_model(filename, split=16000):
     # Save model parameters and arch.
     model.save('model.h5')
     with open('model.json', 'w') as f:
-        json.dump(model.to_json(), f)
+        json.dump(model.to_json(), f, indent=4, separators=(',', ': '))
 
 
 def main():
