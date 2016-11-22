@@ -150,8 +150,8 @@ def train_model(filename, split=16000):
         rotation_range=0,           # Randomly rotate images.
         width_shift_range=0.,       # Random shift (fraction of total width).
         height_shift_range=0.,      # Random shift (fraction of total height).
-        horizontal_flip=False,      # Random flip.
-        vertical_flip=False)        # Random flip.
+        horizontal_flip=True,       # Random horizontal flip.
+        vertical_flip=False)        # Random vertical flip.
 
     # Compute quantities required for featurewise normalization.
     # (std, mean, and principal components if ZCA whitening is applied)

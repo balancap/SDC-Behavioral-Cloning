@@ -311,7 +311,7 @@ class ImageDataGenerator(object):
 
         return x
 
-    def random_transform(self, x):
+    def random_transform(self, x, y):
         # x is a single image, so it doesn't have image number at index 0
         img_row_index = self.row_index - 1
         img_col_index = self.col_index - 1
@@ -366,6 +366,8 @@ class ImageDataGenerator(object):
         if self.horizontal_flip:
             if np.random.random() < 0.5:
                 x = flip_axis(x, img_col_index)
+                # Reverse y as well!
+                y = -y
 
         if self.vertical_flip:
             if np.random.random() < 0.5:
@@ -374,7 +376,7 @@ class ImageDataGenerator(object):
         # TODO:
         # channel-wise normalization
         # barrel/fisheye
-        return x
+        return x, y
 
     def fit(self, X,
             augment=False,
@@ -491,11 +493,18 @@ class NumpyArrayIterator(Iterator):
             index_array, current_index, current_batch_size = next(self.index_generator)
         # The transformation of images is not under thread lock so it can be done in parallel
         batch_x = np.zeros(tuple([current_batch_size] + list(self.X.shape)[1:]))
+        if self.y is not None:
+            batch_y = self.y[index_array]
+        else:
+            batch_y = np.zeros([current_batch_size])
         for i, j in enumerate(index_array):
             x = self.X[j]
-            x = self.image_data_generator.random_transform(x.astype('float32'))
+            x, y = self.image_data_generator.random_transform(x.astype('float32'),
+                                                              batch_y[i])
             x = self.image_data_generator.standardize(x)
             batch_x[i] = x
+            batch_y[i] = y
+
         if self.save_to_dir:
             for i in range(current_batch_size):
                 img = array_to_img(batch_x[i], self.dim_ordering, scale=True)
@@ -506,7 +515,7 @@ class NumpyArrayIterator(Iterator):
                 img.save(os.path.join(self.save_to_dir, fname))
         if self.y is None:
             return batch_x
-        batch_y = self.y[index_array]
+        # batch_y = self.y[index_array]
         return batch_x, batch_y
 
 
