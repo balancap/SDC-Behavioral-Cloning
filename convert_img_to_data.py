@@ -94,6 +94,12 @@ def load_data(path):
                     data['speed'][j] = float(a[6])
                 idx_subsample += 1
         print('')
+
+        # Post processing angle: exponential smoothing.
+        scales = [1., 2., 4., 8., 16., 32., 64., 128.]
+        for s in scales:
+            data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
+
         return data
 
 
