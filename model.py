@@ -44,7 +44,7 @@ def load_npz(filename, split=0.9):
     images = 2. * images - 1.
 
     # Angle data.
-    angle = data['angle_sth32']
+    angle = data['angle_pre4']
 
     # Split datasets.
     idxes = np.arange(images.shape[0])

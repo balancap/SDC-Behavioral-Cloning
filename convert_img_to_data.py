@@ -196,7 +196,7 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/1/'
+    path = './data/4/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
