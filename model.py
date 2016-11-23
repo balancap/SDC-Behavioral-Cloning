@@ -20,7 +20,7 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 128
-NB_EPOCHS = 10
+NB_EPOCHS = 20
 SEED = 4242
 
 # Image dimensions
@@ -41,7 +41,7 @@ def load_npz(filename, split=0.9):
     """
     data = np.load(filename)
     images = data['images'].astype(np.float32) / 255.
-    angle = data['angle_sth8']
+    angle = data['angle_sth32']
 
     # Split datasets.
     idxes = np.arange(images.shape[0])
@@ -115,12 +115,12 @@ def cnn_model(shape):
     # model.add(Dense(100))
     # model.add(Activation('relu'))
     # model.add(Dropout(0.5))
-    model.add(Dense(50))
+    model.add(Dense(100))
     model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
     model.add(Dense(10))
     model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
     model.add(Dense(1))
 
     return model
@@ -139,7 +139,7 @@ def train_model(filename):
 
     # Train the model using SGD + momentum.
     optimizer = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = keras.optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+    optimizer = keras.optimizers.RMSprop(lr=0.0001, rho=0.9, epsilon=1e-08, decay=0.0)
     model.compile(optimizer=optimizer,
                   loss='mse',
                   metrics=['mean_absolute_error'])
@@ -183,8 +183,11 @@ def train_model(filename):
     # Save model parameters and arch.
     model.save('model.h5')
     with open('model.json', 'w') as f:
-        json.dump(json.loads(model.to_json()), f,
-                  indent=4, separators=(',', ': '))
+        json.dump(model.to_json(), f)
+
+    # with open('model.json', 'w') as f:
+    #     json.dump(json.loads(model.to_json()), f,
+    #               indent=4, separators=(',', ': '))
 
 
 def main():
