@@ -96,18 +96,26 @@ def load_data(path, mask=True):
         print('')
 
     # Post-processing angle: exponential smoothing.
-    scales = [1., 2., 4., 8., 16., 32., 64., 128.]
+    scales = [1., 2., 4., 8., 16., 32.]
     for s in scales:
         data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
 
+    # Post-processing: pre-angle.
+    scales = [2, 3, 4, 6]
+    for s in scales:
+        data['angle_pre%i' % s] = np.zeros_like(data['angle'])
+        for i in range(len(data['angle'])):
+            data['angle_pre%i' % s][i-s+1:i+1] += data['angle'][i] / s
+
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
     if mask:
-        nb_frames = 15
+        pre_frames = 5
+        post_frames = 15
         shape = data['images'].shape
         mask = np.zeros((shape[0], ), dtype=bool)
         for i in range(shape[0]):
             if data['angle'][i] != 0.:
-                mask[i:i+nb_frames] = True
+                mask[i-pre_frames:i+post_frames] = True
         # Apply mask.
         for k in data.keys():
             data[k] = data[k][mask]
@@ -188,16 +196,16 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/4/'
+    path = './data/1/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, mask=True)
+    data = load_data(path, mask=False)
     save_np_data(path, data)
     # dump_data(path, data)
 
     # HDF5 dataset.
-    create_hdf5(path)
+    # create_hdf5(path)
 
 if __name__ == '__main__':
     main()

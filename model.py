@@ -41,6 +41,9 @@ def load_npz(filename, split=0.9):
     """
     data = np.load(filename)
     images = data['images'].astype(np.float32) / 255.
+    images = 2. * images - 1.
+
+    # Angle data.
     angle = data['angle_sth32']
 
     # Split datasets.
