@@ -9,8 +9,11 @@ import numpy as np
 
 import keras
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
+
+from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
 from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers.normalization import BatchNormalization
+
 from keras.optimizers import SGD
 from keras.utils import np_utils
 from keras.utils.io_utils import HDF5Matrix
@@ -19,8 +22,8 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 128
-NB_EPOCHS = 20
+BATCH_SIZE = 32
+NB_EPOCHS = 40
 SEED = 4242
 
 # Image dimensions
@@ -31,26 +34,39 @@ IMG_CHANNELS = 3
 # ============================================================================
 # Load data
 # ============================================================================
-def load_npz(filename, split=0.9):
-    """Load data from Numpy .npz file and rescale images to [0, 1].
+def load_npz(filenames, split=0.9, angle_key='angle'):
+    """Load data from Numpy .npz files and rescale images to [0, 1].
     Args:
-      filename: dataset filename.
+      filenames: List of dataset filenames.
       split: Split proportion between train / validation datasets.
     Return:
       (X_train, y_train, X_test, y_test) Numpy arrays.
     """
-    data = np.load(filename)
-    images = data['images'].astype(np.float32) / 255.
+    # Load data from numpy files.
+    images = None
+    angle = None
+    for path in filenames:
+        data = np.load(path)
+        if images is None:
+            images = data['images']
+            angle = data[angle_key]
+        else:
+            images = np.append(images, data['images'], axis=0)
+            angle = np.append(angle, data[angle_key], axis=0)
+
+    # Pre-process data.
+    images = images.astype(np.float32) / 255.
     images = 2. * images - 1.
 
-    # Angle data.
-    angle = data['angle_pre4']
-
-    # Split datasets.
+    # Shuffle and Split datasets.
     idxes = np.arange(images.shape[0])
     np.random.shuffle(idxes)
     idx = int(images.shape[0] * split)
-    return (images[idxes[:idx]], angle[idxes[:idx]],
+
+    # return (images[idxes[:idx]], angle[idxes[:idx]],
+    #         images[idxes[idx:]], angle[idxes[idx:]])
+
+    return (images, angle,
             images[idxes[idx:]], angle[idxes[idx:]])
 
 
@@ -91,48 +107,88 @@ def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
     """
+    bn_epsilon = 1e-3
+
     model = Sequential()
 
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99, input_shape=shape))
     # First 5x5 convolutions layers.
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2),
-                            border_mode='valid',
-                            input_shape=shape))
-    model.add(Activation('relu'))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2),
+    model.add(Convolution2D(24, 5, 5,
+                            # subsample=(2, 2),
                             border_mode='valid'))
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2),
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+
+    model.add(Convolution2D(36, 5, 5,
+                            # subsample=(2, 2),
                             border_mode='valid'))
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
     model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+
+    model.add(Convolution2D(48, 5, 5,
+                            # subsample=(2, 2),
+                            border_mode='valid'))
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+
+    # model.add(Convolution2D(48, 5, 5,
+    #                         subsample=(2, 2),
+    #                         border_mode='valid'))
+    # model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    # model.add(Activation('relu'))
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
     model.add(Activation('relu'))
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
+    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
     model.add(Activation('relu'))
 
     # Flatten + FC layers.
     model.add(Flatten())
-    # model.add(Dense(100))
+    # model.add(Dense(1000))
     # model.add(Activation('relu'))
     # model.add(Dropout(0.5))
-    model.add(Dense(100))
+
+    model.add(Dense(1000))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
     model.add(Activation('relu'))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
+
+    # model.add(Dense(100))
+    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # model.add(Activation('relu'))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(Dropout(0.5))
+
+    model.add(Dense(50))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    model.add(Activation('relu'))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+
     model.add(Dense(10))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
     model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+
     model.add(Dense(1))
+
+    # model.add(Lambda(lambda x: x * 0.001))
+    # model.add(Activation('tanh'))
+    # model.add(Lambda(lambda x: x * 0.2))
 
     return model
 
 
-def train_model(filename):
-    # Load dataset.
-    (X_train, y_train, X_test, y_test) = load_npz(filename, split=0.9)
-
+def train_model(X_train, y_train, X_test, y_test):
+    # Training information.
     print(X_train.shape[0], 'train samples')
     print(X_test.shape[0], 'test samples')
     print('X_train shape:', X_train.shape)
@@ -142,7 +198,11 @@ def train_model(filename):
 
     # Train the model using SGD + momentum.
     optimizer = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = keras.optimizers.RMSprop(lr=0.0001, rho=0.9, epsilon=1e-08, decay=0.0)
+    optimizer = keras.optimizers.RMSprop(lr=0.0001, rho=0.9,
+                                         epsilon=1e-08,
+                                         decay=1 / 4000.)
+    # optimizer = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999,
+    #                                   epsilon=1e-08, decay=0.0)
     model.compile(optimizer=optimizer,
                   loss='mse',
                   metrics=['mean_absolute_error'])
@@ -150,9 +210,9 @@ def train_model(filename):
     # Pre-processing and realtime data augmentation.
     datagen = ImageDataGenerator(
         featurewise_center=False,   # Input mean to 0 over dataset.
-        samplewise_center=True,    # Each sample mean to 0.
+        samplewise_center=False,    # Each sample mean to 0.
         featurewise_std_normalization=False,  # Divide inputs by STD of the dataset.
-        samplewise_std_normalization=True,   # Divide each input by its STD.
+        samplewise_std_normalization=False,   # Divide each input by its STD.
         zca_whitening=False,        # Apply ZCA whitening
         rotation_range=0,           # Randomly rotate images.
         width_shift_range=0.,       # Random shift (fraction of total width).
@@ -168,10 +228,21 @@ def train_model(filename):
     callbacks = [
         keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0,
                                     write_graph=True, write_images=True)
+        # keras.callbacks.LearningRateScheduler(lamda:x x)
     ]
+
+    # model.fit(X_train, y_train,
+    #           batch_size=BATCH_SIZE,
+    #           nb_epoch=NB_EPOCHS,
+    #           verbose=1,
+    #           callbacks=[],
+    #           validation_split=0.05,
+    #           shuffle=True)
 
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
+                                     # save_to_dir='./img/',
+                                     # save_format='png',
                                      shuffle=True),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCHS,
@@ -195,8 +266,18 @@ def train_model(filename):
 
 def main():
     np.random.seed(SEED)
-    filename = './data/4/dataset.npz'
-    train_model(filename)
+    filenames = ['./data/3/dataset.npz',
+                 './data/4/dataset.npz',
+                 './data/5/dataset.npz']
+    filenames = ['./data/7/dataset.npz',
+                 './data/8/dataset.npz']
+
+    # Load dataset.
+    (X_train, y_train, X_test, y_test) = load_npz(filenames,
+                                                  split=0.9,
+                                                  angle_key='angle')
+    # train model.
+    train_model(X_train, y_train, X_test, y_test)
 
 
 if __name__ == '__main__':

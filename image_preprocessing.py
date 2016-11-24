@@ -493,14 +493,12 @@ class NumpyArrayIterator(Iterator):
             index_array, current_index, current_batch_size = next(self.index_generator)
         # The transformation of images is not under thread lock so it can be done in parallel
         batch_x = np.zeros(tuple([current_batch_size] + list(self.X.shape)[1:]))
-        if self.y is not None:
-            batch_y = self.y[index_array]
-        else:
-            batch_y = np.zeros([current_batch_size])
+        batch_y = self.y[index_array]
+
         for i, j in enumerate(index_array):
             x = self.X[j]
             x, y = self.image_data_generator.random_transform(x.astype('float32'),
-                                                              batch_y[i])
+                                                              self.y[j])
             x = self.image_data_generator.standardize(x)
             batch_x[i] = x
             batch_y[i] = y

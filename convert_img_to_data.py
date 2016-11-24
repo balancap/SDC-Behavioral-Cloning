@@ -17,6 +17,9 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
+MASK_PRE_FRAMES = 0
+MASK_POST_FRAMES = 0
+
 
 # ============================================================================
 # Tools
@@ -99,6 +102,7 @@ def load_data(path, mask=True):
     scales = [1., 2., 4., 8., 16., 32.]
     for s in scales:
         data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
+        data['angle_rsth%i' % s] = np_exp_conv(data['angle'][::-1], s)[::-1]
 
     # Post-processing: pre-angle.
     scales = [2, 3, 4, 6]
@@ -109,13 +113,11 @@ def load_data(path, mask=True):
 
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
     if mask:
-        pre_frames = 5
-        post_frames = 15
         shape = data['images'].shape
         mask = np.zeros((shape[0], ), dtype=bool)
         for i in range(shape[0]):
             if data['angle'][i] != 0.:
-                mask[i-pre_frames:i+post_frames] = True
+                mask[i-MASK_PRE_FRAMES:i+MASK_POST_FRAMES+1] = True
         # Apply mask.
         for k in data.keys():
             data[k] = data[k][mask]
@@ -196,7 +198,7 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/4/'
+    path = './data/7/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
