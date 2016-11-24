@@ -5,6 +5,7 @@ data/
 .ipynb_checkpoints/
 __pycache__/
 logs/
+img/
 
 *.h5
 *.json
