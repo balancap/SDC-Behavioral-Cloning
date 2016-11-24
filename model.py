@@ -113,22 +113,22 @@ def cnn_model(shape):
     """
     model = Sequential()
 
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99, input_shape=shape))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99, input_shape=shape))
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
-                            # subsample=(2, 2),
+                            subsample=(2, 2),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 1: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(36, 5, 5,
-                            # subsample=(2, 2),
+                            subsample=(2, 2),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(48, 5, 5,
@@ -201,8 +201,12 @@ def train_model(X_train, y_train, X_test, y_test):
     model = cnn_model(X_train.shape[1:])
 
     # Train the model using SGD + momentum.
-    optimizer = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = keras.optimizers.RMSprop(lr=LEARNING_RATE, rho=0.9,
+    optimizer = SGD(lr=0.1,
+                    decay=1e-6,
+                    momentum=0.9,
+                    nesterov=True)
+    optimizer = keras.optimizers.RMSprop(lr=LEARNING_RATE,
+                                         rho=0.9,
                                          epsilon=1e-08,
                                          decay=DECAY)
     # optimizer = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999,
