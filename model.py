@@ -11,7 +11,7 @@ import keras
 from keras.models import Sequential
 
 from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Convolution2D, MaxPooling2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
 
 from keras.optimizers import SGD
@@ -23,7 +23,11 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 32
-NB_EPOCHS = 40
+LEARNING_RATE = 0.0001
+DECAY = 1e-4
+BN_EPSILON = 1e-6
+NB_EPOCHS = 10
+
 SEED = 4242
 
 # Image dimensions
@@ -107,48 +111,53 @@ def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
     """
-    bn_epsilon = 1e-3
-
     model = Sequential()
 
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99, input_shape=shape))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99, input_shape=shape))
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             # subsample=(2, 2),
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+    model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    print('Layer 1: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(36, 5, 5,
                             # subsample=(2, 2),
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+    model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    print('Layer 2: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(48, 5, 5,
                             # subsample=(2, 2),
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+    model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
+    print('Layer 3: ', model.layers[-1].output_shape)
 
     # model.add(Convolution2D(48, 5, 5,
     #                         subsample=(2, 2),
     #                         border_mode='valid'))
-    # model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     # model.add(Activation('relu'))
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
     model.add(Activation('relu'))
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    print('Layer 4: ', model.layers[-1].output_shape)
+
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=bn_epsilon, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
     model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    print('Layer 5: ', model.layers[-1].output_shape)
 
     # Flatten + FC layers.
     model.add(Flatten())
@@ -162,14 +171,14 @@ def cnn_model(shape):
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
 
-    # model.add(Dense(100))
-    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
-    # model.add(Activation('relu'))
+    model.add(Dense(100))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
 
     model.add(Dense(50))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
@@ -179,11 +188,6 @@ def cnn_model(shape):
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(1))
-
-    # model.add(Lambda(lambda x: x * 0.001))
-    # model.add(Activation('tanh'))
-    # model.add(Lambda(lambda x: x * 0.2))
-
     return model
 
 
@@ -198,9 +202,9 @@ def train_model(X_train, y_train, X_test, y_test):
 
     # Train the model using SGD + momentum.
     optimizer = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-    optimizer = keras.optimizers.RMSprop(lr=0.0001, rho=0.9,
+    optimizer = keras.optimizers.RMSprop(lr=LEARNING_RATE, rho=0.9,
                                          epsilon=1e-08,
-                                         decay=1 / 4000.)
+                                         decay=DECAY)
     # optimizer = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999,
     #                                   epsilon=1e-08, decay=0.0)
     model.compile(optimizer=optimizer,
@@ -231,14 +235,6 @@ def train_model(X_train, y_train, X_test, y_test):
         # keras.callbacks.LearningRateScheduler(lamda:x x)
     ]
 
-    # model.fit(X_train, y_train,
-    #           batch_size=BATCH_SIZE,
-    #           nb_epoch=NB_EPOCHS,
-    #           verbose=1,
-    #           callbacks=[],
-    #           validation_split=0.05,
-    #           shuffle=True)
-
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
                                      # save_to_dir='./img/',
@@ -266,11 +262,13 @@ def train_model(X_train, y_train, X_test, y_test):
 
 def main():
     np.random.seed(SEED)
-    filenames = ['./data/3/dataset.npz',
+    filenames = [
+                 # './data/3/dataset.npz',
                  './data/4/dataset.npz',
                  './data/5/dataset.npz']
-    filenames = ['./data/7/dataset.npz',
-                 './data/8/dataset.npz']
+    # filenames = ['./data/7/dataset.npz',
+    #              './data/8/dataset.npz']
+    # filenames = ['./data/1/dataset.npz']
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
