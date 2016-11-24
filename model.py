@@ -22,9 +22,9 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 32
-LEARNING_RATE = 0.0001
-DECAY = 1e-4
+BATCH_SIZE = 64
+LEARNING_RATE = 0.001
+DECAY = 1e-5
 BN_EPSILON = 1e-6
 NB_EPOCHS = 10
 
@@ -67,11 +67,11 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     np.random.shuffle(idxes)
     idx = int(images.shape[0] * split)
 
-    # return (images[idxes[:idx]], angle[idxes[:idx]],
-    #         images[idxes[idx:]], angle[idxes[idx:]])
-
-    return (images, angle,
+    return (images[idxes[:idx]], angle[idxes[:idx]],
             images[idxes[idx:]], angle[idxes[idx:]])
+
+    # return (images, angle,
+    #         images[idxes[idx:]], angle[idxes[idx:]])
 
 
 def load_hdf5(filename, split=0.9):
@@ -117,6 +117,7 @@ def cnn_model(shape):
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             subsample=(2, 2),
+                            init='normal',
                             # input_shape=shape,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
@@ -126,6 +127,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(36, 5, 5,
                             # subsample=(2, 2),
+                            init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -134,6 +136,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(48, 5, 5,
                             subsample=(2, 2),
+                            init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -142,6 +145,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(54, 5, 5,
                             # subsample=(2, 2),
+                            init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -149,20 +153,16 @@ def cnn_model(shape):
 
     print('Layer 3b: ', model.layers[-1].output_shape)
 
-    # model.add(Convolution2D(48, 5, 5,
-    #                         subsample=(2, 2),
-    #                         border_mode='valid'))
-    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
-    # model.add(Activation('relu'))
-
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
+                            init='normal',
                             border_mode='valid'))
     model.add(Activation('relu'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 4: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(64, 3, 3,
+                            init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -174,27 +174,19 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(Dropout(0.5))
 
-    # model.add(Dense(1000))
-    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
-    # model.add(Activation('relu'))
-    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    # model.add(Dropout(0.5))
-
     model.add(Dense(100))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
+    # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    # model.add(Dropout(0.5))
 
     model.add(Dense(50))
-    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
+    # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(10))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
+    # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(1))
     return model
@@ -218,8 +210,10 @@ def train_model(X_train, y_train, X_test, y_test):
                                          rho=0.9,
                                          epsilon=1e-08,
                                          decay=DECAY)
-    # optimizer = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999,
-    #                                   epsilon=1e-08, decay=0.0)
+    optimizer = keras.optimizers.Adam(lr=LEARNING_RATE,
+                                      beta_1=0.9, beta_2=0.999,
+                                      epsilon=1e-08,
+                                      decay=DECAY)
     model.compile(optimizer=optimizer,
                   loss='mse',
                   metrics=['mean_absolute_error'])
@@ -281,12 +275,12 @@ def main():
                  './data/5/dataset.npz']
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
-    filenames = ['./data/1/dataset.npz']
+#     filenames = ['./data/1/dataset.npz']
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle')
+                                                  angle_key='angle_rsth16')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

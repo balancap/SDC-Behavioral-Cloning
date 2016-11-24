@@ -44,9 +44,11 @@ def np_exp_conv(data, scale):
             cum_conv = cum_conv * np.exp(-1. / scale)
             cum_vol = cum_vol * np.exp(-1. / scale)
 
+        # if data[i] != 0.0:
         cum_conv += data[i]
         cum_vol += 1
-        r[i] = cum_conv / cum_vol
+        # if cum_vol > 0.0:
+        r[i] = cum_conv / scale
     return r
 
 
@@ -202,7 +204,7 @@ def main():
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, mask=False)
+    data = load_data(path, mask=True)
     save_np_data(path, data)
     # dump_data(path, data)
 
