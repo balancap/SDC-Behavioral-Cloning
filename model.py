@@ -115,7 +115,7 @@ def cnn_model(shape):
 
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
     # First 5x5 convolutions layers.
-    model.add(Convolution2D(24, 5, 5,
+    model.add(Convolution2D(24, 3, 3,
                             subsample=(2, 2),
                             # input_shape=shape,
                             border_mode='valid'))
@@ -124,7 +124,7 @@ def cnn_model(shape):
     # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 1: ', model.layers[-1].output_shape)
 
-    model.add(Convolution2D(36, 5, 5,
+    model.add(Convolution2D(36, 3, 3,
                             subsample=(2, 2),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
@@ -132,13 +132,20 @@ def cnn_model(shape):
     # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
-    model.add(Convolution2D(48, 5, 5,
-                            # subsample=(2, 2),
+    model.add(Convolution2D(48, 3, 3,
+                            subsample=(2, 2),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
+    # model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
     print('Layer 3: ', model.layers[-1].output_shape)
+
+    model.add(Convolution2D(54, 3, 3,
+                            subsample=(2, 2),
+                            border_mode='valid'))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    model.add(Activation('relu'))
+    print('Layer 3b: ', model.layers[-1].output_shape)
 
     # model.add(Convolution2D(48, 5, 5,
     #                         subsample=(2, 2),
@@ -166,9 +173,9 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(Dropout(0.5))
 
-    model.add(Dense(1000))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
-    model.add(Activation('relu'))
+    # model.add(Dense(1000))
+    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
+    # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
 
@@ -273,7 +280,7 @@ def main():
                  './data/5/dataset.npz']
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
-    # filenames = ['./data/1/dataset.npz']
+    filenames = ['./data/1/dataset.npz']
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
