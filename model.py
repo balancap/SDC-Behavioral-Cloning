@@ -113,12 +113,13 @@ def cnn_model(shape):
     """
     model = Sequential()
 
-    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99, input_shape=shape))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             subsample=(2, 2),
+                            # input_shape=shape,
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 1: ', model.layers[-1].output_shape)
@@ -126,7 +127,7 @@ def cnn_model(shape):
     model.add(Convolution2D(36, 5, 5,
                             subsample=(2, 2),
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 2: ', model.layers[-1].output_shape)
@@ -134,7 +135,7 @@ def cnn_model(shape):
     model.add(Convolution2D(48, 5, 5,
                             # subsample=(2, 2),
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
     print('Layer 3: ', model.layers[-1].output_shape)
@@ -142,19 +143,19 @@ def cnn_model(shape):
     # model.add(Convolution2D(48, 5, 5,
     #                         subsample=(2, 2),
     #                         border_mode='valid'))
-    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
     model.add(Activation('relu'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 4: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(64, 3, 3,
                             border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.99))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
     print('Layer 5: ', model.layers[-1].output_shape)
@@ -166,24 +167,24 @@ def cnn_model(shape):
     # model.add(Dropout(0.5))
 
     model.add(Dense(1000))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
 
     model.add(Dense(100))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     # model.add(Dropout(0.5))
 
     model.add(Dense(50))
-    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(10))
-    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.99))
+    # model.add(BatchNormalization(epsilon=1e-05, momentum=0.999))
     model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
