@@ -34,6 +34,7 @@ def telemetry(sid, data):
     image = Image.open(BytesIO(base64.b64decode(imgString)))
     image_array = np.asarray(image)
     transformed_image_array = image_array[None, :, :, :]
+    # print(np.max(image_array))
 
     transformed_image_array = transformed_image_array.astype(np.float32) / 255.
     transformed_image_array = 2. * transformed_image_array - 1.

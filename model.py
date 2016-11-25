@@ -22,11 +22,11 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 LEARNING_RATE = 0.001
-DECAY = 1e-5
+DECAY = 1e-4
 BN_EPSILON = 1e-6
-NB_EPOCHS = 10
+NB_EPOCHS = 20
 
 SEED = 4242
 
@@ -176,17 +176,19 @@ def cnn_model(shape):
 
     model.add(Dense(100))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
-    model.add(Activation('relu'))
-    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(Activation('relu'))
+    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(50))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
-    model.add(Activation('relu'))
-    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(Activation('relu'))
+    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(10))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
-    model.add(Activation('relu'))
+    # model.add(Activation('relu'))
+    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(1))
     return model
@@ -272,7 +274,9 @@ def main():
     filenames = [
                  # './data/3/dataset.npz',
                  './data/4/dataset.npz',
-                 './data/5/dataset.npz']
+                 './data/b_1/dataset.npz'
+                 ]
+                 # './data/5/dataset.npz']
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
 #     filenames = ['./data/1/dataset.npz']
@@ -280,7 +284,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_rsth16')
+                                                  angle_key='angle')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 
