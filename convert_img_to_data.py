@@ -52,6 +52,57 @@ def np_exp_conv(data, scale):
     return r
 
 
+def sinc(alpha):
+    y = np.ones_like(alpha)
+    mask = alpha != 0.0
+    y[mask] = np.sin(alpha[mask]) / alpha[mask]
+    return y
+
+
+def cosc(alpha):
+    y = np.zeros_like(alpha)
+    mask = alpha != 0.0
+    y[mask] = (1. - np.cos(alpha[mask])) / alpha[mask]
+    return y
+
+
+def trajectory(dt, speed, angle):
+    length = 5.85
+    # speed = 48.28032 * 1000 / 3600
+
+    # Rotation radius
+    # radius = length / np.sin(angle)
+    alpha = speed * dt / length * np.sin(angle)
+
+    # dx displacement vectors.
+    dx = np.zeros(shape=(len(angle), 2), dtype=np.float32)
+    dx[:, 0] = speed * dt * cosc(alpha)
+    dx[:, 1] = speed * dt * sinc(alpha)
+    # dx[:, 2] = 1.0
+
+    # Affine transformation.
+    rot_trans = np.zeros(shape=(len(angle), 2, 2), dtype=np.float32)
+    rot_trans[:, 0, 0] = np.cos(alpha)
+    rot_trans[:, 1, 1] = np.cos(alpha)
+    rot_trans[:, 0, 1] = np.sin(alpha)
+    rot_trans[:, 1, 0] = -np.sin(alpha)
+
+    # Compute position vector of the car.
+    x = np.zeros(shape=(len(angle)+1, 2), dtype=np.float32)
+    v1 = np.array([1., 0.], dtype=np.float32)
+    v2 = np.array([0., 1.], dtype=np.float32)
+
+    for i in range(len(angle)):
+        v1 = np.matmul(rot_trans[i], v1)
+        v2 = np.matmul(rot_trans[i], v2)
+
+        x[i+1] = x[i]
+        x[i+1] += v1 * dx[i, 0]
+        x[i+1] += v2 * dx[i, 1]
+
+    return x
+
+
 # ============================================================================
 # Load / Save data: old way!
 # ============================================================================
@@ -75,6 +126,7 @@ def load_data(path, mask=True):
                 'angle': np.zeros((nb_imgs, ), dtype=np.float32),
                 'throttle': np.zeros((nb_imgs, ), dtype=np.float32),
                 'speed': np.zeros((nb_imgs, ), dtype=np.float32),
+                'dt': np.zeros((nb_imgs, ), dtype=np.float32),
             }
 
     # Load CSV information file.
@@ -84,7 +136,18 @@ def load_data(path, mask=True):
 
         # Load image, when exists, and associated data.
         idx_subsample = 0
-        for i, a in enumerate(csv_list):
+        for i in range(len(csv_list)-1):
+            a = csv_list[i]
+
+            # Time difference: ugly hack!
+            p0 = csv_list[i][0][:-4].split("_")
+            p1 = csv_list[i+1][0][:-4].split("_")
+            t0 = float(p0[-1]) * 0.001 + float(p0[-2]) + float(p0[-3]) * 60. + float(p0[-4]) * 3600.
+            t1 = float(p1[-1]) * 0.001 + float(p1[-2]) + float(p1[-3]) * 60. + float(p1[-4]) * 3600.
+
+            dt = t1 - t0
+
+            # Open file.
             filename = a[0]
             if os.path.isfile(filename):
                 if idx_subsample % SUBSAMPLING == 0:
@@ -96,9 +159,14 @@ def load_data(path, mask=True):
                     data['images'][j] = mpimg.imread(filename)
                     data['angle'][j] = float(a[3])
                     data['throttle'][j] = float(a[4])
-                    data['speed'][j] = float(a[6])
+                    data['speed'][j] = float(a[6]) * 1.609344 / 3.6
+                    data['dt'][j] = dt
+
                 idx_subsample += 1
         print('')
+
+    # Compute trajectory.
+    data['x'] = trajectory(data['dt'], data['speed'], data['angle'])
 
     # Post-processing angle: exponential smoothing.
     scales = [1., 2., 4., 8., 16., 32.]
