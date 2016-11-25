@@ -23,7 +23,7 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 128
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.00001
 DECAY = 1e-4
 BN_EPSILON = 1e-6
 NB_EPOCHS = 20
@@ -172,13 +172,13 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(100))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(50))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -280,6 +280,7 @@ def main():
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
 #     filenames = ['./data/1/dataset.npz']
+    filenames = ['./data/50hz_1/dataset.npz']
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
