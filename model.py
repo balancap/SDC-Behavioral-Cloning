@@ -23,7 +23,7 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 128
-LEARNING_RATE = 0.00001
+LEARNING_RATE = 0.01
 DECAY = 1e-4
 BN_EPSILON = 1e-6
 NB_EPOCHS = 20
