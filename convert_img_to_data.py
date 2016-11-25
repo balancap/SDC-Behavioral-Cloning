@@ -66,8 +66,7 @@ def cosc(alpha):
     return y
 
 
-def trajectory(dt, speed, angle):
-    length = 5.85
+def trajectory(dt, speed, angle, length=5.85):
     # speed = 48.28032 * 1000 / 3600
 
     # Rotation radius
@@ -92,6 +91,8 @@ def trajectory(dt, speed, angle):
     v1 = np.array([1., 0.], dtype=np.float32)
     v2 = np.array([0., 1.], dtype=np.float32)
 
+    unit_vectors = np.zeros(shape=(len(angle), 2), dtype=np.float32)
+
     for i in range(len(angle)):
         v1 = np.matmul(rot_trans[i], v1)
         v2 = np.matmul(rot_trans[i], v2)
@@ -100,7 +101,10 @@ def trajectory(dt, speed, angle):
         x[i+1] += v1 * dx[i, 0]
         x[i+1] += v2 * dx[i, 1]
 
-    return x
+    return x, alpha
+
+
+# def angle_smoothing(x, angle, alpha):
 
 
 # ============================================================================
@@ -166,7 +170,7 @@ def load_data(path, mask=True):
         print('')
 
     # Compute trajectory.
-    data['x'] = trajectory(data['dt'], data['speed'], data['angle'])
+    data['x'], data['alpha'] = trajectory(data['dt'], data['speed'], data['angle'])
 
     # Post-processing angle: exponential smoothing.
     scales = [1., 2., 4., 8., 16., 32.]
