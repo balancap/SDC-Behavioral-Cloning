@@ -17,12 +17,13 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 0
+MASK_PRE_FRAMES = 4
 MASK_POST_FRAMES = 0
 
+CAR_LENGTH = 5.9
 
 # ============================================================================
-# Tools
+# Numpy Tools
 # ============================================================================
 @numba.jit(nopython=True, cache=True)
 def np_exp_conv(data, scale):
@@ -52,6 +53,9 @@ def np_exp_conv(data, scale):
     return r
 
 
+# ============================================================================
+# Trajectory and angle estimates.
+# ============================================================================
 def sinc(alpha):
     y = np.ones_like(alpha)
     mask = alpha != 0.0
@@ -66,7 +70,7 @@ def cosc(alpha):
     return y
 
 
-def trajectory(dt, speed, angle, length=5.85):
+def trajectory(dt, speed, angle, length=CAR_LENGTH):
     # speed = 48.28032 * 1000 / 3600
 
     # Rotation radius
@@ -91,7 +95,7 @@ def trajectory(dt, speed, angle, length=5.85):
     v1 = np.array([1., 0.], dtype=np.float32)
     v2 = np.array([0., 1.], dtype=np.float32)
 
-    unit_vectors = np.zeros(shape=(len(angle), 2), dtype=np.float32)
+    # unit_vectors = np.zeros(shape=(len(angle), 2), dtype=np.float32)
 
     for i in range(len(angle)):
         v1 = np.matmul(rot_trans[i], v1)
@@ -104,7 +108,21 @@ def trajectory(dt, speed, angle, length=5.85):
     return x, alpha
 
 
-# def angle_smoothing(x, angle, alpha):
+def angle_curvature(x, delta=1, length=CAR_LENGTH):
+    def deriv(x):
+        """Compute derivative with zero padding.
+        """
+        dx = x[2*delta:] - x[:-2*delta]
+        dx = np.lib.pad(dx, ((delta, delta), (0, 0)), 'symmetric')
+        return dx / 2.
+
+    # First and second derivative...
+    dvx = deriv(x)
+    ddvx = deriv(dvx)
+    # Inverse curvature.
+    kappa = (ddvx[:, 1] * dvx[:, 0] - ddvx[:, 0] * dvx[:, 1]) / ((dvx[:, 0]**2 + dvx[:, 1]**2) ** 1.5)
+    angle = np.arcsin(-kappa * length)
+    return angle
 
 
 # ============================================================================
@@ -184,6 +202,11 @@ def load_data(path, mask=True):
         data['angle_pre%i' % s] = np.zeros_like(data['angle'])
         for i in range(len(data['angle'])):
             data['angle_pre%i' % s][i-s+1:i+1] += data['angle'][i] / s
+
+    # Post-processing: curvature angle.
+    scales = [2, 4, 6, 8]
+    for s in scales:
+        data['angle_cv%i' % s] = angle_curvature(data['x'], delta=s)
 
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
     if mask:
@@ -272,7 +295,7 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/50hz_1/'
+    path = './data/4/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
