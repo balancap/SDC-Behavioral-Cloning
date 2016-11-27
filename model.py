@@ -22,11 +22,11 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 128
-LEARNING_RATE = 0.01
-DECAY = 1e-4
+BATCH_SIZE = 32
+LEARNING_RATE = 0.0001
+DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 10
+NB_EPOCHS = 100
 
 SEED = 4242
 
@@ -200,6 +200,9 @@ def train_model(X_train, y_train, X_test, y_test):
     print(X_test.shape[0], 'test samples')
     print('X_train shape:', X_train.shape)
 
+    # Training weights: more on large angles.
+    y_weights = 1. + 100. * np.abs(y_train)
+
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
 
@@ -246,6 +249,7 @@ def train_model(X_train, y_train, X_test, y_test):
 
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
+                                     sample_weight=y_weights,
                                      # save_to_dir='./img/',
                                      # save_format='png',
                                      shuffle=True),
@@ -274,18 +278,18 @@ def main():
     filenames = [
                  # './data/3/dataset.npz',
                  './data/4/dataset.npz',
-                 './data/b_1/dataset.npz'
+                 './data/5/dataset.npz'
                  ]
                  # './data/5/dataset.npz']
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
 #     filenames = ['./data/1/dataset.npz']
-    filenames = ['./data/50hz_1/dataset.npz']
+    # filenames = ['./data/50hz_1/dataset.npz']
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle')
+                                                  angle_key='angle_cv4')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

@@ -17,7 +17,7 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 4
+MASK_PRE_FRAMES = 2
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
@@ -122,6 +122,9 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
     # Inverse curvature.
     kappa = (ddvx[:, 1] * dvx[:, 0] - ddvx[:, 0] * dvx[:, 1]) / ((dvx[:, 0]**2 + dvx[:, 1]**2) ** 1.5)
     angle = np.arcsin(-kappa * length)
+
+    angle = angle[delta:]
+    angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
     return angle
 
 
@@ -204,7 +207,7 @@ def load_data(path, mask=True):
             data['angle_pre%i' % s][i-s+1:i+1] += data['angle'][i] / s
 
     # Post-processing: curvature angle.
-    scales = [2, 4, 6, 8]
+    scales = [2, 3, 4, 6, 8]
     for s in scales:
         data['angle_cv%i' % s] = angle_curvature(data['x'], delta=s)
 
