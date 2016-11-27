@@ -268,11 +268,16 @@ class ImageDataGenerator(object):
                             'a tuple or list of two floats. '
                             'Received arg: ', zoom_range)
 
-    def flow(self, X, y=None, batch_size=32, shuffle=True, seed=None,
+    def flow(self, X, y=None,
+             batch_size=32,
+             sample_weight=None,
+             shuffle=True, seed=None,
              save_to_dir=None, save_prefix='', save_format='jpeg'):
         return NumpyArrayIterator(
             X, y, self,
-            batch_size=batch_size, shuffle=shuffle, seed=seed,
+            batch_size=batch_size,
+            sample_weight=sample_weight,
+            shuffle=shuffle, seed=seed,
             dim_ordering=self.dim_ordering,
             save_to_dir=save_to_dir, save_prefix=save_prefix, save_format=save_format)
 
@@ -466,7 +471,8 @@ class Iterator(object):
 class NumpyArrayIterator(Iterator):
 
     def __init__(self, X, y, image_data_generator,
-                 batch_size=32, shuffle=False, seed=None,
+                 batch_size=32, sample_weight=None,
+                 shuffle=False, seed=None,
                  dim_ordering='default',
                  save_to_dir=None, save_prefix='', save_format='jpeg'):
         if y is not None and len(X) != len(y):
@@ -482,6 +488,7 @@ class NumpyArrayIterator(Iterator):
         self.save_to_dir = save_to_dir
         self.save_prefix = save_prefix
         self.save_format = save_format
+        self.sample_weight = np.ones((X.shape[0], ), dtype=np.float32) if sample_weight is None else sample_weight
         super(NumpyArrayIterator, self).__init__(X.shape[0], batch_size, shuffle, seed)
 
     def next(self):
@@ -494,6 +501,7 @@ class NumpyArrayIterator(Iterator):
         # The transformation of images is not under thread lock so it can be done in parallel
         batch_x = np.zeros(tuple([current_batch_size] + list(self.X.shape)[1:]))
         batch_y = self.y[index_array]
+        batch_w = self.sample_weight[index_array]
 
         for i, j in enumerate(index_array):
             x = self.X[j]
@@ -514,7 +522,7 @@ class NumpyArrayIterator(Iterator):
         if self.y is None:
             return batch_x
         # batch_y = self.y[index_array]
-        return batch_x, batch_y
+        return batch_x, batch_y, batch_w
 
 
 class DirectoryIterator(Iterator):
