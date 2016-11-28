@@ -303,7 +303,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_cv4')
+                                                  angle_key='angle_post10')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

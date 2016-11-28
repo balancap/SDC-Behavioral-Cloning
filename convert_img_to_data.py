@@ -133,7 +133,7 @@ def trajectory(dt, speed, angle, length=CAR_LENGTH):
     return x, alpha
 
 
-def angle_post(x, alpha, dt, speed, delta=1, length=CAR_LENGTH):
+def angle_post(alpha, dt, speed, delta=1, length=CAR_LENGTH):
     # Rotation matrices.
     rot_mat = np.zeros(shape=(len(alpha), 2, 2), dtype=np.float32)
     rot_mat[:, 1, 1] = np.cos(alpha)
@@ -174,7 +174,7 @@ def angle_post(x, alpha, dt, speed, delta=1, length=CAR_LENGTH):
     inv_radius = a[:, 0] / b
     angle = np.arcsin(inv_radius * length)
 
-    return angle, inv_radius
+    return angle
 
 
 def angle_post_mean(x, alpha, dt, speed, deltas=None, length=CAR_LENGTH):
@@ -182,7 +182,7 @@ def angle_post_mean(x, alpha, dt, speed, deltas=None, length=CAR_LENGTH):
 
     avg = np.zeros(shape=(len(alpha),), dtype=np.float32)
     for d in deltas:
-        a, kappa = angle_post(x, alpha, dt, speed, delta=d, length=length)
+        a = angle_post(alpha, dt, speed, delta=d, length=length)
         avg += a
     avg = avg / len(deltas)
     return avg
@@ -300,6 +300,13 @@ def load_data(path, fmask=None):
     for s in scales:
         data['angle_cv%i' % s] = angle_curvature(data['x'], delta=s)
 
+    # Post-processing: post-angles.
+    scales = [5, 10, 15, 20]
+    for s in scales:
+        data['angle_post%i' % s] = angle_post(data['alpha'],
+                                              data['dt'],
+                                              data['speed'], delta=s)
+
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
     if fmask is not None:
         mask = fmask(data['angle'])
@@ -382,12 +389,12 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/4/'
-    path = './data/q3_recover_right/'
+    path = './data/1/'
+    # path = './data/q3_recover_right/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, fmask=mask_negative)
+    data = load_data(path, fmask=None)
     save_np_data(path, data)
     # dump_data(path, data)
 
