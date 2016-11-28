@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.image as mpimg
 
 IMG_SHAPE = (160, 320, 3)
+# IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
 MASK_PRE_FRAMES = 1
@@ -152,6 +153,14 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
     return angle
 
 
+def image_preprocessing(img):
+    # Resize - cut - channel convert.
+    out = cv2.resize(img, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
+    out = out[34:-10, :, :]
+    out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
+    return out
+
+
 # ============================================================================
 # Load / Save data: old way!
 # ============================================================================
@@ -205,7 +214,8 @@ def load_data(path, fmask=None):
                     sys.stdout.flush()
 
                     # Copy data.
-                    data['images'][j] = mpimg.imread(filename)
+                    img = mpimg.imread(filename)
+                    data['images'][j] = image_preprocessing(img)
                     data['angle'][j] = float(a[3])
                     data['throttle'][j] = float(a[4])
                     data['speed'][j] = float(a[6]) * 1.609344 / 3.6
@@ -218,7 +228,7 @@ def load_data(path, fmask=None):
     data['x'], data['alpha'] = trajectory(data['dt'], data['speed'], data['angle'])
 
     # Post-processing angle: exponential smoothing.
-    scales = [1., 2., 4., 8., 16., 32.]
+    scales = [2., 4., 8., 16., 32.]
     for s in scales:
         data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
         data['angle_rsth%i' % s] = np_exp_conv(data['angle'][::-1], s)[::-1]
