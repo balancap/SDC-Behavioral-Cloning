@@ -26,7 +26,7 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 20
+NB_EPOCHS = 50
 
 SEED = 4242
 
@@ -63,7 +63,7 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     images = 2. * images - 1.
 
     # Angle translation.
-    delta = 4
+    delta = 6
     angle = angle[delta:]
     angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
 
@@ -281,8 +281,12 @@ def train_model(X_train, y_train, X_test, y_test):
 def main():
     np.random.seed(SEED)
     filenames = [
-                 './data/3/dataset.npz',
+                 # './data/3/dataset.npz',
                  # './data/4/dataset.npz',
+                 './data/q3_recover_left/dataset.npz',
+                 './data/q3_recover_right/dataset.npz',
+                 './data/q3_recover_left2/dataset.npz',
+                 './data/q3_recover_right2/dataset.npz',
                  './data/5/dataset.npz'
                  ]
                  # './data/5/dataset.npz']

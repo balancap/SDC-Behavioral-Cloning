@@ -17,7 +17,7 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 4
+MASK_PRE_FRAMES = 1
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
@@ -318,11 +318,11 @@ def create_hdf5(path):
 
 def main():
     path = './data/4/'
-    # path = './data/q3_recover_right/'
+    path = './data/q3_recover_right/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, fmask=mask_nonzero)
+    data = load_data(path, fmask=mask_negative)
     save_np_data(path, data)
     # dump_data(path, data)
 
