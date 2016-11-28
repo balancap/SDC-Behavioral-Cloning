@@ -210,9 +210,10 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
 
 def image_preprocessing(img):
     # Resize - cut - channel convert.
-    out = cv2.resize(img, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
-    out = out[34:-10, :, :]
-    out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
+    out = img
+    # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
+    # out = out[34:-10, :, :]
+    # out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
     return out
 
 
