@@ -23,10 +23,10 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 32
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 100
+NB_EPOCHS = 20
 
 SEED = 4242
 
@@ -58,9 +58,14 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
             images = np.append(images, data['images'], axis=0)
             angle = np.append(angle, data[angle_key], axis=0)
 
-    # Pre-process data.
+    # Pre-process images.
     images = images.astype(np.float32) / 255.
     images = 2. * images - 1.
+
+    # Angle translation.
+    delta = 4
+    angle = angle[delta:]
+    angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
 
     # Shuffle and Split datasets.
     idxes = np.arange(images.shape[0])
@@ -117,7 +122,7 @@ def cnn_model(shape):
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             subsample=(2, 2),
-                            init='normal',
+                            # init='normal',
                             # input_shape=shape,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
@@ -127,7 +132,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(36, 5, 5,
                             # subsample=(2, 2),
-                            init='normal',
+                            # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -136,7 +141,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(48, 5, 5,
                             subsample=(2, 2),
-                            init='normal',
+                            # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -145,7 +150,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(54, 5, 5,
                             # subsample=(2, 2),
-                            init='normal',
+                            # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -155,14 +160,14 @@ def cnn_model(shape):
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
-                            init='normal',
+                            # init='normal',
                             border_mode='valid'))
     model.add(Activation('relu'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 4: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(64, 3, 3,
-                            init='normal',
+                            # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -201,7 +206,7 @@ def train_model(X_train, y_train, X_test, y_test):
     print('X_train shape:', X_train.shape)
 
     # Training weights: more on large angles.
-    y_weights = 1. + 100. * np.abs(y_train)
+    y_weights = 1. + 10. * np.abs(y_train)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
@@ -276,8 +281,8 @@ def train_model(X_train, y_train, X_test, y_test):
 def main():
     np.random.seed(SEED)
     filenames = [
-                 # './data/3/dataset.npz',
-                 './data/4/dataset.npz',
+                 './data/3/dataset.npz',
+                 # './data/4/dataset.npz',
                  './data/5/dataset.npz'
                  ]
                  # './data/5/dataset.npz']
@@ -285,6 +290,11 @@ def main():
     #              './data/8/dataset.npz']
 #     filenames = ['./data/1/dataset.npz']
     # filenames = ['./data/50hz_1/dataset.npz']
+    # filenames = [
+    #              './data/q3_clean/dataset.npz',
+    #              './data/q3_recover_left/dataset.npz',
+    #              './data/q3_recover_right/dataset.npz',
+    #             ]
 
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,

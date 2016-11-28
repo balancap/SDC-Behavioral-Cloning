@@ -17,7 +17,7 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (160, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 2
+MASK_PRE_FRAMES = 4
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
@@ -51,6 +51,30 @@ def np_exp_conv(data, scale):
         # if cum_vol > 0.0:
         r[i] = cum_conv / scale
     return r
+
+
+def mask_nonzero(data):
+    mask = np.zeros((data.shape[0], ), dtype=bool)
+    for i in range(data.shape[0]):
+        if data[i] != 0.:
+            mask[i-MASK_PRE_FRAMES:i+MASK_POST_FRAMES+1] = True
+    return mask
+
+
+def mask_positive(data):
+    mask = np.zeros((data.shape[0], ), dtype=bool)
+    for i in range(data.shape[0]):
+        if data[i] > 0.:
+            mask[i-MASK_PRE_FRAMES:i+MASK_POST_FRAMES+1] = True
+    return mask
+
+
+def mask_negative(data):
+    mask = np.zeros((data.shape[0], ), dtype=bool)
+    for i in range(data.shape[0]):
+        if data[i] < 0.:
+            mask[i-MASK_PRE_FRAMES:i+MASK_POST_FRAMES+1] = True
+    return mask
 
 
 # ============================================================================
@@ -91,13 +115,13 @@ def trajectory(dt, speed, angle, length=CAR_LENGTH):
     rot_trans[:, 1, 0] = -np.sin(alpha)
 
     # Compute position vector of the car.
-    x = np.zeros(shape=(len(angle)+1, 2), dtype=np.float32)
+    x = np.zeros(shape=(len(angle), 2), dtype=np.float32)
     v1 = np.array([1., 0.], dtype=np.float32)
     v2 = np.array([0., 1.], dtype=np.float32)
 
     # unit_vectors = np.zeros(shape=(len(angle), 2), dtype=np.float32)
 
-    for i in range(len(angle)):
+    for i in range(len(angle)-1):
         v1 = np.matmul(rot_trans[i], v1)
         v2 = np.matmul(rot_trans[i], v2)
 
@@ -123,15 +147,15 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
     kappa = (ddvx[:, 1] * dvx[:, 0] - ddvx[:, 0] * dvx[:, 1]) / ((dvx[:, 0]**2 + dvx[:, 1]**2) ** 1.5)
     angle = np.arcsin(-kappa * length)
 
-    angle = angle[delta:]
-    angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
+    # angle = angle[delta:]
+    # angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
     return angle
 
 
 # ============================================================================
 # Load / Save data: old way!
 # ============================================================================
-def load_data(path, mask=True):
+def load_data(path, fmask=None):
     """Load DATA from path: images + car information.
 
     Return:
@@ -144,7 +168,7 @@ def load_data(path, mask=True):
     list_imgs = os.listdir(path + 'IMG/')
     print('Number of images: %i. Sub-sampling: %i.' % (len(list_imgs),
                                                        SUBSAMPLING))
-    nb_imgs = math.ceil(len(list_imgs) / float(SUBSAMPLING))
+    nb_imgs = math.ceil(len(list_imgs) / float(SUBSAMPLING))-1
     # Data structure.
     data = {
                 'images': np.zeros((nb_imgs, *IMG_SHAPE), dtype=np.uint8),
@@ -212,13 +236,8 @@ def load_data(path, mask=True):
         data['angle_cv%i' % s] = angle_curvature(data['x'], delta=s)
 
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
-    if mask:
-        shape = data['images'].shape
-        mask = np.zeros((shape[0], ), dtype=bool)
-        for i in range(shape[0]):
-            if data['angle'][i] != 0.:
-                mask[i-MASK_PRE_FRAMES:i+MASK_POST_FRAMES+1] = True
-        # Apply mask.
+    if fmask is not None:
+        mask = fmask(data['angle'])
         for k in data.keys():
             data[k] = data[k][mask]
 
@@ -299,10 +318,11 @@ def create_hdf5(path):
 
 def main():
     path = './data/4/'
+    # path = './data/q3_recover_right/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, mask=True)
+    data = load_data(path, fmask=mask_nonzero)
     save_np_data(path, data)
     # dump_data(path, data)
 
