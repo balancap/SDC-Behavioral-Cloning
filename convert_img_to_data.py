@@ -123,14 +123,69 @@ def trajectory(dt, speed, angle, length=CAR_LENGTH):
     # unit_vectors = np.zeros(shape=(len(angle), 2), dtype=np.float32)
 
     for i in range(len(angle)-1):
-        v1 = np.matmul(rot_trans[i], v1)
-        v2 = np.matmul(rot_trans[i], v2)
-
         x[i+1] = x[i]
         x[i+1] += v1 * dx[i, 0]
         x[i+1] += v2 * dx[i, 1]
 
+        v1 = np.matmul(rot_trans[i], v1)
+        v2 = np.matmul(rot_trans[i], v2)
+
     return x, alpha
+
+
+def angle_post(x, alpha, dt, speed, delta=1, length=CAR_LENGTH):
+    # Rotation matrices.
+    rot_mat = np.zeros(shape=(len(alpha), 2, 2), dtype=np.float32)
+    rot_mat[:, 1, 1] = np.cos(alpha)
+    rot_mat[:, 0, 0] = np.cos(alpha)
+    rot_mat[:, 0, 1] = np.sin(alpha)
+    rot_mat[:, 1, 0] = -np.sin(alpha)
+
+    # dx displacement vectors.
+    dx = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
+    dx[:, 0] = speed * dt * cosc(alpha)
+    dx[:, 1] = speed * dt * sinc(alpha)
+
+    # Local coordinate system. TODO: dense matrix notation...
+    ax = np.zeros(shape=(len(alpha), 2, 1), dtype=np.float32)
+    ay = np.zeros(shape=(len(alpha), 2, 1), dtype=np.float32)
+    ax[:, 0, 0] = ay[:, 1, 0] = 1.0
+    ax = np.matmul(rot_mat, ax)
+    ay = np.matmul(rot_mat, ay)
+
+    # Delta - Cumulative transformations and dx.
+    cumul_dx = dx.copy()
+    for j in range(1, delta):
+        # Update cumulative dx.
+        cumul_dx[:-j, 0] += dx[j:, 0] * ax[:-j, 0, 0]
+        cumul_dx[:-j, 1] += dx[j:, 0] * ax[:-j, 1, 0]
+
+        cumul_dx[:-j, 0] += dx[j:, 1] * ay[:-j, 0, 0]
+        cumul_dx[:-j, 1] += dx[j:, 1] * ay[:-j, 1, 0]
+
+        # Update local coordinate system.
+        ax[:-j] = np.matmul(rot_mat[j:], ax[:-j])
+        ay[:-j] = np.matmul(rot_mat[j:], ay[:-j])
+
+    # Parameters in equation: ax - b = 0.
+    a = np.squeeze(ay)
+    b = a[:, 0] * cumul_dx[:, 0] + a[:, 1] * cumul_dx[:, 1]
+    # Inverse radius and angle.
+    inv_radius = a[:, 0] / b
+    angle = np.arcsin(inv_radius * length)
+
+    return angle, inv_radius
+
+
+def angle_post_mean(x, alpha, dt, speed, deltas=None, length=CAR_LENGTH):
+    deltas = deltas or [1]
+
+    avg = np.zeros(shape=(len(alpha),), dtype=np.float32)
+    for d in deltas:
+        a, kappa = angle_post(x, alpha, dt, speed, delta=d, length=length)
+        avg += a
+    avg = avg / len(deltas)
+    return avg
 
 
 def angle_curvature(x, delta=1, length=CAR_LENGTH):
