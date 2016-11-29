@@ -64,9 +64,9 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     # images *= 2
 
     # Angle translation.
-    delta = 6
-    angle = angle[delta:]
-    angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
+    # delta = 6
+    # angle = angle[delta:]
+    # angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
 
     # Shuffle and Split datasets.
     idxes = np.arange(images.shape[0])
@@ -155,13 +155,13 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(100))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(50))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -185,6 +185,7 @@ def train_model(X_train, y_train, X_test, y_test):
 
     # Training weights: more on large angles.
     y_weights = 1. + 10. * np.abs(y_train)
+    y_weights = np.ones_like(y_train)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
@@ -261,11 +262,11 @@ def main():
     filenames = [
                  # './data/3/dataset.npz',
                  # './data/4/dataset.npz',
-                 './data/q3_recover_left/dataset.npz',
-                 './data/q3_recover_right/dataset.npz',
-                 './data/q3_recover_left2/dataset.npz',
-                 './data/q3_recover_right2/dataset.npz',
-                 './data/q3_clean/dataset.npz',
+                 # './data/q3_recover_left/dataset.npz',
+                 # './data/q3_recover_right/dataset.npz',
+                 # './data/q3_recover_left2/dataset.npz',
+                 # './data/q3_recover_right2/dataset.npz',
+                 # './data/q3_clean/dataset.npz',
                  './data/q3_clean2/dataset.npz',
                  # './data/5/dataset.npz'
                  ]
@@ -283,7 +284,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_post6')
+                                                  angle_key='angle_post20')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 
