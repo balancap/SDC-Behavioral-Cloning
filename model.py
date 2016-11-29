@@ -26,12 +26,13 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 20
+NB_EPOCHS = 100
 
 SEED = 4242
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
+IMG_ROWS, IMG_COLS = 95, 320
 IMG_CHANNELS = 3
 
 
@@ -303,7 +304,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_post10')
+                                                  angle_key='angle_post5')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

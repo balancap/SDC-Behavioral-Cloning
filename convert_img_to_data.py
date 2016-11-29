@@ -14,14 +14,15 @@ import numpy as np
 
 import matplotlib.image as mpimg
 
-IMG_SHAPE = (160, 320, 3)
 # IMG_SHAPE = (160, 320, 3)
+IMG_SHAPE = (95, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 1
+MASK_PRE_FRAMES = 4
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
+CAR_OFFSET = 2.0
 
 # ============================================================================
 # Numpy Tools
@@ -133,7 +134,7 @@ def trajectory(dt, speed, angle, length=CAR_LENGTH):
     return x, alpha
 
 
-def angle_post(alpha, dt, speed, delta=1, length=CAR_LENGTH):
+def angle_post(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
     # Rotation matrices.
     rot_mat = np.zeros(shape=(len(alpha), 2, 2), dtype=np.float32)
     rot_mat[:, 1, 1] = np.cos(alpha)
@@ -171,7 +172,8 @@ def angle_post(alpha, dt, speed, delta=1, length=CAR_LENGTH):
     a = np.squeeze(ay)
     b = a[:, 0] * cumul_dx[:, 0] + a[:, 1] * cumul_dx[:, 1]
     # Inverse radius and angle.
-    inv_radius = a[:, 0] / b
+    # inv_radius = a[:, 0] / b
+    inv_radius = a[:, 0] / (b - a[:, 0] * offset)
     angle = np.arcsin(inv_radius * length)
 
     return angle
@@ -209,8 +211,9 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
 
 
 def image_preprocessing(img):
-    # Resize - cut - channel convert.
+    # Cut bottom and top.
     out = img
+    out = out[50:-15, :, :]
     # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
     # out = out[34:-10, :, :]
     # out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
@@ -230,17 +233,27 @@ def load_data(path, fmask=None):
          - throttle;
          - speed;
     """
+    # List of 'center' images.
     list_imgs = os.listdir(path + 'IMG/')
-    print('Number of images: %i. Sub-sampling: %i.' % (len(list_imgs),
-                                                       SUBSAMPLING))
-    nb_imgs = math.ceil(len(list_imgs) / float(SUBSAMPLING))-1
+    nb_img_center = len([l for l in list_imgs if 'center' in l])
+    nb_img_left = len([l for l in list_imgs if 'left' in l])
+    nb_img_right = len([l for l in list_imgs if 'right' in l])
+
+    # Number of types (left-center-right) and images.
+    nb_types = 1
+    nb_imgs = nb_img_center - 1
+    if nb_img_left == nb_img_center and nb_img_right == nb_img_center:
+        nb_types = 3
+
+    print('Number of images: %i. Categories: %i.' % (nb_imgs, nb_types))
+
     # Data structure.
     data = {
-                'images': np.zeros((nb_imgs, *IMG_SHAPE), dtype=np.uint8),
-                'angle': np.zeros((nb_imgs, ), dtype=np.float32),
-                'throttle': np.zeros((nb_imgs, ), dtype=np.float32),
-                'speed': np.zeros((nb_imgs, ), dtype=np.float32),
-                'dt': np.zeros((nb_imgs, ), dtype=np.float32),
+                'images': np.zeros((nb_types, nb_imgs, *IMG_SHAPE), dtype=np.uint8),
+                'angle': np.zeros((nb_types, nb_imgs), dtype=np.float32),
+                'throttle': np.zeros((nb_types, nb_imgs), dtype=np.float32),
+                'speed': np.zeros((nb_types, nb_imgs), dtype=np.float32),
+                'dt': np.zeros((nb_types, nb_imgs), dtype=np.float32),
             }
 
     # Load CSV information file.
@@ -248,65 +261,105 @@ def load_data(path, fmask=None):
         creader = csv.reader(f)
         csv_list = list(creader)
 
-        # Load image, when exists, and associated data.
-        idx_subsample = 0
-        for i in range(len(csv_list)-1):
-            a = csv_list[i]
+    # Load image, when exists, and associated data.
+    j = 0
+    for i in range(len(csv_list)-1):
+        a = csv_list[i]
 
-            # Time difference: ugly hack!
-            p0 = csv_list[i][0][:-4].split("_")
-            p1 = csv_list[i+1][0][:-4].split("_")
-            t0 = float(p0[-1]) * 0.001 + float(p0[-2]) + float(p0[-3]) * 60. + float(p0[-4]) * 3600.
-            t1 = float(p1[-1]) * 0.001 + float(p1[-2]) + float(p1[-3]) * 60. + float(p1[-4]) * 3600.
+        # Time difference: ugly hack, but working!
+        p0 = csv_list[i][0][:-4].split("_")
+        p1 = csv_list[i+1][0][:-4].split("_")
+        t0 = float(p0[-1]) * 0.001 + float(p0[-2]) + float(p0[-3]) * 60. + float(p0[-4]) * 3600.
+        t1 = float(p1[-1]) * 0.001 + float(p1[-2]) + float(p1[-3]) * 60. + float(p1[-4]) * 3600.
+        dt = t1 - t0
 
-            dt = t1 - t0
+        # Open image files.
+        filename_center = a[0].strip()
+        filename_left = a[1].strip()
+        filename_right = a[2].strip()
 
-            # Open file.
-            filename = a[0]
-            if os.path.isfile(filename):
-                if idx_subsample % SUBSAMPLING == 0:
-                    j = idx_subsample // SUBSAMPLING
-                    sys.stdout.write('\r>> Converting image %d/%d' % (j+1, nb_imgs))
-                    sys.stdout.flush()
+        if os.path.isfile(filename_center):
+            sys.stdout.write('\r>> Converting image %d/%d' % (j+1, nb_imgs))
+            sys.stdout.flush()
 
-                    # Copy data.
-                    img = mpimg.imread(filename)
-                    data['images'][j] = image_preprocessing(img)
-                    data['angle'][j] = float(a[3])
-                    data['throttle'][j] = float(a[4])
-                    data['speed'][j] = float(a[6]) * 1.609344 / 3.6
-                    data['dt'][j] = dt
+            # Image data.
+            img = mpimg.imread(filename_center)
+            data['images'][0, j] = image_preprocessing(img)
 
-                idx_subsample += 1
-        print('')
+            # Car data.
+            data['angle'][0, j] = float(a[3])
+            data['throttle'][0, j] = float(a[4])
+            data['speed'][0, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
+            data['dt'][0, j] = dt
+
+            # Additional left and right data.
+            if nb_types > 1:
+                img = mpimg.imread(filename_left)
+                data['images'][1, j] = image_preprocessing(img)
+
+                data['angle'][1, j] = float(a[3])
+                data['throttle'][1, j] = float(a[4])
+                data['speed'][1, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
+                data['dt'][1, j] = dt
+
+                img = mpimg.imread(filename_right)
+                data['images'][2, j] = image_preprocessing(img)
+
+                data['angle'][2, j] = float(a[3])
+                data['throttle'][2, j] = float(a[4])
+                data['speed'][2, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
+                data['dt'][2, j] = dt
+
+            j += 1
+    print('')
 
     # Compute trajectory.
-    data['x'], data['alpha'] = trajectory(data['dt'], data['speed'], data['angle'])
-
-    # Post-processing angle: exponential smoothing.
-    scales = [2., 4., 8., 16., 32.]
-    for s in scales:
-        data['angle_sth%i' % s] = np_exp_conv(data['angle'], s)
-        data['angle_rsth%i' % s] = np_exp_conv(data['angle'][::-1], s)[::-1]
-
-    # Post-processing: pre-angle.
-    scales = [2, 3, 4, 6]
-    for s in scales:
-        data['angle_pre%i' % s] = np.zeros_like(data['angle'])
-        for i in range(len(data['angle'])):
-            data['angle_pre%i' % s][i-s+1:i+1] += data['angle'][i] / s
+    data['x'] = np.zeros((nb_types, nb_imgs, 2), dtype=np.float32)
+    data['alpha'] = np.zeros((nb_types, nb_imgs), dtype=np.float32)
+    data['x'][0], data['alpha'][0] = trajectory(data['dt'][0],
+                                                data['speed'][0],
+                                                data['angle'][0])
+    # Left - right copy of x and alpha.
+    if nb_types > 1:
+        data['x'][2] = data['x'][1] = data['x'][0]
+        data['alpha'][2] = data['alpha'][1] = data['alpha'][0]
 
     # Post-processing: curvature angle.
-    scales = [2, 3, 4, 6, 8]
-    for s in scales:
-        data['angle_cv%i' % s] = angle_curvature(data['x'], delta=s)
+    cv_scales = [2, 3, 4, 6, 8]
+    for s in cv_scales:
+        k = 'angle_cv%i' % s
+        data[k] = np.zeros((nb_types, nb_imgs), dtype=np.float32)
+        data[k][0] = angle_curvature(data['x'][0], delta=s)
+    if nb_types > 1:
+        for s in cv_scales:
+            k = 'angle_cv%i' % s
+            data[k][2] = data[k][1] = data[k][0]
 
     # Post-processing: post-angles.
-    scales = [5, 10, 15, 20]
-    for s in scales:
-        data['angle_post%i' % s] = angle_post(data['alpha'],
-                                              data['dt'],
-                                              data['speed'], delta=s)
+    post_scales = [6, 8, 10, 12, 15]
+    for s in post_scales:
+        k = 'angle_post%i' % s
+        data[k] = np.zeros((nb_types, nb_imgs), dtype=np.float32)
+        data[k][0] = angle_post(data['alpha'][0],
+                                data['dt'][0], data['speed'][0],
+                                delta=s, offset=0.0)
+    if nb_types > 1:
+        for s in post_scales:
+            k = 'angle_post%i' % s
+            data[k][1] = angle_post(data['alpha'][0],
+                                    data['dt'][0], data['speed'][0],
+                                    delta=s,
+                                    offset=-CAR_OFFSET)
+            data[k][2] = angle_post(data['alpha'][0],
+                                    data['dt'][0], data['speed'][0],
+                                    delta=s,
+                                    offset=CAR_OFFSET)
+
+    # Reshape elements.
+    for k in data.keys():
+        shape = data[k].shape
+        new_shape = (shape[0] * shape[1], *shape[2:])
+        data[k] = np.reshape(data[k], new_shape)
 
     # Mask data: keep frames after turning event only (1 frame ~ 0.1 second).
     if fmask is not None:
@@ -390,12 +443,14 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/1/'
-    # path = './data/q3_recover_right/'
+    path = './data/5/'
+    path = './data/q3_clean/'
+    path = './data/q3_recover_left2/'
+    path = './data/q3_recover_right2/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, fmask=None)
+    data = load_data(path, fmask=mask_negative)
     save_np_data(path, data)
     # dump_data(path, data)
 
