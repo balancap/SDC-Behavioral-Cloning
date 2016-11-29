@@ -401,6 +401,10 @@ def load_data(path, fmask=None):
         mask = fmask(data['angle'])
         for k in data.keys():
             data[k] = data[k][mask]
+    # Cutting last values.
+    cutting = 50
+    for k in data.keys():
+        data[k] = data[k][:-cutting]
 
     return data
 
