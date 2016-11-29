@@ -53,15 +53,15 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     for path in filenames:
         data = np.load(path)
         if images is None:
-            images = data['images']
+            images = data['images'].astype(np.float32) * 2 / 255. - 1.
             angle = data[angle_key]
         else:
-            images = np.append(images, data['images'], axis=0)
+            images = np.append(images, data['images'].astype(np.float32) * 2 / 255. - 1.,
+                               axis=0)
             angle = np.append(angle, data[angle_key], axis=0)
 
     # Pre-process images.
-    images = images.astype(np.float32) / 255.
-    images = 2. * images - 1.
+    # images *= 2
 
     # Angle translation.
     delta = 6
@@ -137,27 +137,27 @@ def cnn_model(shape):
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
-    model.add(Convolution2D(48, 5, 5,
+    # model.add(Convolution2D(48, 5, 5,
+    #                         subsample=(2, 2),
+    #                         # init='normal',
+    #                         border_mode='valid'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
+    # print('Layer 3: ', model.layers[-1].output_shape)
+
+    model.add(Convolution2D(54, 5, 5,
                             subsample=(2, 2),
                             # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    # model.add(MaxPooling2D(pool_size=(3, 3), strides=None, border_mode='valid'))
+    # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
+
     print('Layer 3: ', model.layers[-1].output_shape)
-
-    model.add(Convolution2D(54, 5, 5,
-                            # subsample=(2, 2),
-                            # init='normal',
-                            border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
-
-    print('Layer 3b: ', model.layers[-1].output_shape)
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
@@ -167,12 +167,19 @@ def cnn_model(shape):
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 4: ', model.layers[-1].output_shape)
 
-    model.add(Convolution2D(64, 3, 3,
+    model.add(Convolution2D(80, 3, 3,
                             # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
     print('Layer 5: ', model.layers[-1].output_shape)
+
+    model.add(Convolution2D(96, 3, 3,
+                            # init='normal',
+                            border_mode='valid'))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    model.add(Activation('relu'))
+    print('Layer 6: ', model.layers[-1].output_shape)
 
     # Flatten + FC layers.
     model.add(Flatten())
@@ -288,7 +295,9 @@ def main():
                  './data/q3_recover_right/dataset.npz',
                  './data/q3_recover_left2/dataset.npz',
                  './data/q3_recover_right2/dataset.npz',
-                 './data/5/dataset.npz'
+                 './data/q3_clean/dataset.npz',
+                 './data/q3_clean2/dataset.npz',
+                 # './data/5/dataset.npz'
                  ]
                  # './data/5/dataset.npz']
     # filenames = ['./data/7/dataset.npz',
@@ -304,7 +313,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_post5')
+                                                  angle_key='angle_post6')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 
