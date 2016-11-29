@@ -206,7 +206,7 @@ def angle_post(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
     P2[mask, 1] = 0.0
 
     mask = (P1[:, 1] > P3[:, 1])
-    P1[mask, 1] = 0.0
+    P1[mask, 1] = P3[mask, 1]
 
     # Inverse curvature at zero and angle.
     dvx = (P1 - P0) / factor
