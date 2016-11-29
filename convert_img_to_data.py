@@ -18,7 +18,7 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (95, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 10
+MASK_PRE_FRAMES = 5
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
@@ -390,6 +390,10 @@ def load_data(path, fmask=None):
                                     delta=s,
                                     offset=CAR_OFFSET)
 
+    # Cutting last values.
+    cutting = 50
+    for k in data.keys():
+        data[k] = data[k][:, :-cutting]
     # Reshape elements.
     for k in data.keys():
         shape = data[k].shape
@@ -401,10 +405,6 @@ def load_data(path, fmask=None):
         mask = fmask(data['angle'])
         for k in data.keys():
             data[k] = data[k][mask]
-    # Cutting last values.
-    cutting = 50
-    for k in data.keys():
-        data[k] = data[k][:-cutting]
 
     return data
 
@@ -484,7 +484,7 @@ def create_hdf5(path):
 def main():
     path = './data/5/'
     path = './data/q3_clean/'
-    path = './data/q3_recover_left2/'
+    path = './data/q3_recover_left/'
     path = './data/q3_recover_right2/'
     print('Dataset path: ', path)
 

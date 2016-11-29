@@ -26,7 +26,7 @@ BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 100
+NB_EPOCHS = 10
 
 SEED = 4242
 
@@ -262,11 +262,11 @@ def main():
     filenames = [
                  # './data/3/dataset.npz',
                  # './data/4/dataset.npz',
-                 # './data/q3_recover_left/dataset.npz',
-                 # './data/q3_recover_right/dataset.npz',
-                 # './data/q3_recover_left2/dataset.npz',
-                 # './data/q3_recover_right2/dataset.npz',
-                 # './data/q3_clean/dataset.npz',
+                 './data/q3_recover_left/dataset.npz',
+                 './data/q3_recover_right/dataset.npz',
+                 './data/q3_recover_left2/dataset.npz',
+                 './data/q3_recover_right2/dataset.npz',
+                 './data/q3_clean/dataset.npz',
                  './data/q3_clean2/dataset.npz',
                  # './data/5/dataset.npz'
                  ]
@@ -284,7 +284,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_post20')
+                                                  angle_key='angle_post40')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 
