@@ -24,6 +24,16 @@ MASK_POST_FRAMES = 0
 CAR_LENGTH = 5.9
 CAR_OFFSET = 2.0
 
+
+def image_preprocessing(img):
+    # Cut bottom and top.
+    out = img
+    out = out[50:-15, :, :]
+    # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
+    # out = out[34:-10, :, :]
+    # out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
+    return out
+
 # ============================================================================
 # Numpy Tools
 # ============================================================================
@@ -146,6 +156,7 @@ def angle_post(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
     dx = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
     dx[:, 0] = speed * dt * cosc(alpha)
     dx[:, 1] = speed * dt * sinc(alpha)
+    steps = np.ones(shape=(len(alpha), ), dtype=np.int8)
 
     # Local coordinate system. TODO: dense matrix notation...
     ax = np.zeros(shape=(len(alpha), 2, 1), dtype=np.float32)
@@ -167,14 +178,48 @@ def angle_post(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
         # Update local coordinate system.
         ax[:-j] = np.matmul(rot_mat[j:], ax[:-j])
         ay[:-j] = np.matmul(rot_mat[j:], ay[:-j])
+        steps[:-j] += 1
+
+    # Fit a Bezier curve! See: https://en.wikipedia.org/wiki/B%C3%A9zier_curve
+    P0 = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
+    P0[:, 0] = offset
+    P3 = cumul_dx
+    P1 = P0.copy()
+    P2 = P3.copy()
+
+    # Vertical displacement... 1/3 factor coming from speed normalisation.
+    factor = 0.3333
+    P1[:, 1] += dt * speed * steps * factor
+    # Same for P2...
+    ay = np.squeeze(ay)
+    P2[:, 0] += dt * speed * steps * (-ay[:, 0]) * factor
+    P2[:, 1] += dt * speed * steps * (-ay[:, 1]) * factor
+
+    # Check control points for licit values...
+    mask = (P3[:, 0] > P0[:, 0]) * (P2[:, 0] < P0[:, 0])
+    P2[mask, 0] = P0[mask, 0]
+    mask = (P3[:, 0] < P0[:, 0]) * (P2[:, 0] > P0[:, 0])
+    P2[mask, 0] = P0[mask, 0]
+    mask = (P3[:, 1] > 0.) * (P2[:, 1] < 0.)
+    P2[mask, 1] = 0.0
+    mask = (P3[:, 1] < 0.) * (P2[:, 1] > 0.)
+    P2[mask, 1] = 0.0
+
+    mask = (P1[:, 1] > P3[:, 1])
+    P1[mask, 1] = 0.0
+
+    # Inverse curvature at zero and angle.
+    dvx = (P1 - P0) / factor
+    ddvx = 2 * (P2 - 2*P1 + P0) / factor
+    kappa = -(ddvx[:, 1] * dvx[:, 0] - ddvx[:, 0] * dvx[:, 1]) / ((dvx[:, 0]**2 + dvx[:, 1]**2) ** 1.5)
+    angle = np.arcsin(kappa * length)
 
     # Parameters in equation: ax - b = 0.
-    a = np.squeeze(ay)
-    b = a[:, 0] * cumul_dx[:, 0] + a[:, 1] * cumul_dx[:, 1]
-    # Inverse radius and angle.
-    # inv_radius = a[:, 0] / b
-    inv_radius = a[:, 0] / (b - a[:, 0] * offset)
-    angle = np.arcsin(inv_radius * length)
+#     a = np.squeeze(ay)
+#     b = a[:, 0] * cumul_dx[:, 0] + a[:, 1] * cumul_dx[:, 1]
+#     # Inverse radius and angle.
+#     inv_radius = a[:, 0] / ( b - a[:, 0] * offset )
+#     angle = np.arcsin(inv_radius * length)
 
     return angle
 
@@ -208,16 +253,6 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
     # angle = angle[delta:]
     # angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
     return angle
-
-
-def image_preprocessing(img):
-    # Cut bottom and top.
-    out = img
-    out = out[50:-15, :, :]
-    # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
-    # out = out[34:-10, :, :]
-    # out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
-    return out
 
 
 # ============================================================================
@@ -336,7 +371,7 @@ def load_data(path, fmask=None):
             data[k][2] = data[k][1] = data[k][0]
 
     # Post-processing: post-angles.
-    post_scales = [6, 8, 10, 12, 15]
+    post_scales = [5, 10, 20, 30, 40, 50]
     for s in post_scales:
         k = 'angle_post%i' % s
         data[k] = np.zeros((nb_types, nb_imgs), dtype=np.float32)

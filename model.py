@@ -80,36 +80,6 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     #         images[idxes[idx:]], angle[idxes[idx:]])
 
 
-def load_hdf5(filename, split=0.9):
-    """Load data from HDF5 file and rescale images to [0, 1].
-    Disclaimer: HDF5 dataset + Keras ImageDataGenerator do not seem to
-    go very well together...
-
-    Args:
-      filename: dataset filename.
-      split: Split proportion between train / validation datasets.
-    Return:
-      (X_train, y_train, X_test, y_test) Keras HDF5Matrix.
-    """
-    # Shape and split index
-    with h5py.File(filename, 'r') as f:
-        shape = f['images'].shape
-        idx = int(shape[0] * split)
-
-    def normalizer_fct(x):
-        return np.divide(np.float32(x), 255.)
-
-    # HDF5Matrix numpy style arrays.
-    X_train = HDF5Matrix(filename, 'images', start=0, end=idx,
-                         normalizer=normalizer_fct)
-    y_train = HDF5Matrix(filename, 'angle', start=0, end=idx)
-    X_test = HDF5Matrix(filename, 'images', start=idx, end=None,
-                        normalizer=normalizer_fct)
-    y_test = HDF5Matrix(filename, 'angle', start=idx, end=None)
-
-    return (X_train, y_train, X_test, y_test)
-
-
 # ============================================================================
 # Model and training
 # ============================================================================
