@@ -18,7 +18,7 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (95, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 4
+MASK_PRE_FRAMES = 10
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
