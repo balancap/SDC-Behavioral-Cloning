@@ -184,8 +184,8 @@ def train_model(X_train, y_train, X_test, y_test):
     print('X_train shape:', X_train.shape)
 
     # Training weights: more on large angles.
-    y_weights = 1. + 20. * np.abs(y_train)
-    # y_weights = np.ones_like(y_train)
+    # y_weights = 1. + 20. * np.abs(y_train)
+    y_weights = np.ones_like(y_train)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
@@ -284,7 +284,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_med10')
+                                                  angle_key='angle_med5')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

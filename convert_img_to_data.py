@@ -22,7 +22,7 @@ MASK_PRE_FRAMES = 3
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
-CAR_OFFSET = 1.0
+CAR_OFFSET = 1.5
 
 
 def image_preprocessing(img):
@@ -451,7 +451,7 @@ def load_data(path, fmask=None):
                                     delta=s,
                                     offset=CAR_OFFSET)
 
-    med_scales = [5, 10, 15, 20]
+    med_scales = [4, 6, 8, 10, 15, 20]
     for s in med_scales:
         k = 'angle_med%i' % s
         data[k] = np.zeros((nb_types, nb_imgs), dtype=np.float32)
@@ -563,13 +563,13 @@ def create_hdf5(path):
 
 def main():
     path = './data/5/'
-    path = './data/q3_clean2/'
-    path = './data/q3_recover_left2/'
-    path = './data/q3_recover_right/'
+    path = './data/q3_clean/'
+    # path = './data/q3_recover_left2/'
+    # path = './data/q3_recover_right/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
-    data = load_data(path, fmask=mask_negative)
+    data = load_data(path, fmask=None)
     save_np_data(path, data)
     # dump_data(path, data)
 
