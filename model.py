@@ -102,12 +102,12 @@ def cnn_model(shape):
     print('Layer 1: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(36, 5, 5,
-                            # subsample=(2, 2),
+                            subsample=(2, 2),
                             # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same'))
+    # model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
     # model.add(Convolution2D(48, 5, 5,
@@ -155,13 +155,13 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(100))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(50))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -184,8 +184,8 @@ def train_model(X_train, y_train, X_test, y_test):
     print('X_train shape:', X_train.shape)
 
     # Training weights: more on large angles.
-    y_weights = 1. + 10. * np.abs(y_train)
-    y_weights = np.ones_like(y_train)
+    y_weights = 1. + 20. * np.abs(y_train)
+    # y_weights = np.ones_like(y_train)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
@@ -284,7 +284,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_post40')
+                                                  angle_key='angle_med10')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

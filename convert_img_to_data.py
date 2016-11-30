@@ -18,11 +18,11 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (95, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 5
+MASK_PRE_FRAMES = 3
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 5.9
-CAR_OFFSET = 2.0
+CAR_OFFSET = 1.0
 
 
 def image_preprocessing(img):
@@ -221,6 +221,67 @@ def angle_post(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
 #     inv_radius = a[:, 0] / ( b - a[:, 0] * offset )
 #     angle = np.arcsin(inv_radius * length)
 
+    angle[np.isnan(angle)] = 0.0
+
+    return angle
+
+
+def angle_median(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
+    # Rotation radius
+    # radius = length / np.sin(angle)
+    # alpha = speed * dt / length * np.sin(angle)
+
+    # Rotation matrices.
+    rot_mat = np.zeros(shape=(len(alpha), 2, 2), dtype=np.float32)
+    rot_mat[:, 1, 1] = np.cos(alpha)
+    rot_mat[:, 0, 0] = np.cos(alpha)
+    rot_mat[:, 0, 1] = np.sin(alpha)
+    rot_mat[:, 1, 0] = -np.sin(alpha)
+
+    # dx displacement vectors.
+    dx = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
+    dx[:, 0] = speed * dt * cosc(alpha)
+    dx[:, 1] = speed * dt * sinc(alpha)
+    steps = np.ones(shape=(len(alpha), ), dtype=np.int8)
+
+    # Local coordinate system. TODO: dense matrix notation...
+    ax = np.zeros(shape=(len(alpha), 2, 1), dtype=np.float32)
+    ay = np.zeros(shape=(len(alpha), 2, 1), dtype=np.float32)
+    ax[:, 0, 0] = ay[:, 1, 0] = 1.0
+    ax = np.matmul(rot_mat, ax)
+    ay = np.matmul(rot_mat, ay)
+
+    # Delta - Cumulative transformations and dx.
+    cumul_dx = dx.copy()
+    for j in range(1, delta):
+        # Update cumulative dx.
+        cumul_dx[:-j, 0] += dx[j:, 0] * ax[:-j, 0, 0]
+        cumul_dx[:-j, 1] += dx[j:, 0] * ax[:-j, 1, 0]
+
+        cumul_dx[:-j, 0] += dx[j:, 1] * ay[:-j, 0, 0]
+        cumul_dx[:-j, 1] += dx[j:, 1] * ay[:-j, 1, 0]
+
+        # Update local coordinate system.
+        ax[:-j] = np.matmul(rot_mat[j:], ax[:-j])
+        ay[:-j] = np.matmul(rot_mat[j:], ay[:-j])
+        steps[:-j] += 1
+
+    # Median fit...
+    P0 = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
+    P0[:, 0] = offset
+    P1 = cumul_dx
+
+    # Parameters in equation: ax - b = 0.
+    a = P1 - P0
+    m = (P0 + P1) / 2.
+    b = a[:, 0] * m[:, 0] + a[:, 1] * m[:, 1]
+    # Inverse radius and angle.
+    kappa = a[:, 0] / b
+    angle = np.arcsin(kappa * length)
+
+    # Just in case...
+    angle[np.isnan(angle)] = 0.0
+
     return angle
 
 
@@ -390,8 +451,27 @@ def load_data(path, fmask=None):
                                     delta=s,
                                     offset=CAR_OFFSET)
 
+    med_scales = [5, 10, 15, 20]
+    for s in med_scales:
+        k = 'angle_med%i' % s
+        data[k] = np.zeros((nb_types, nb_imgs), dtype=np.float32)
+        data[k][0] = angle_median(data['alpha'][0],
+                                  data['dt'][0], data['speed'][0],
+                                  delta=s, offset=0.0)
+    if nb_types > 1:
+        for s in med_scales:
+            k = 'angle_med%i' % s
+            data[k][1] = angle_median(data['alpha'][0],
+                                      data['dt'][0], data['speed'][0],
+                                      delta=s,
+                                      offset=-CAR_OFFSET)
+            data[k][2] = angle_median(data['alpha'][0],
+                                      data['dt'][0], data['speed'][0],
+                                      delta=s,
+                                      offset=CAR_OFFSET)
+
     # Cutting last values.
-    cutting = 50
+    cutting = 30
     for k in data.keys():
         data[k] = data[k][:, :-cutting]
     # Reshape elements.
@@ -483,9 +563,9 @@ def create_hdf5(path):
 
 def main():
     path = './data/5/'
-    path = './data/q3_clean/'
-    path = './data/q3_recover_left/'
-    path = './data/q3_recover_right2/'
+    path = './data/q3_clean2/'
+    path = './data/q3_recover_left2/'
+    path = './data/q3_recover_right/'
     print('Dataset path: ', path)
 
     # Load data and 'pickle' dump.
