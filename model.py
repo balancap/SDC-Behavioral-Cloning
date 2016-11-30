@@ -13,6 +13,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
 from keras.layers import Convolution2D, MaxPooling2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
+from keras.regularizers import l1, l2
 
 from keras.optimizers import SGD
 from keras.utils import np_utils
@@ -87,6 +88,7 @@ def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
     """
+    l2_weight = 0.001
     model = Sequential()
 
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
@@ -157,18 +159,18 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
-    model.add(Dense(100))
+    model.add(Dense(100, W_regularizer=l2(l2_weight)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(Dropout(0.5))
 
-    model.add(Dense(50))
+    model.add(Dense(50, W_regularizer=l2(l2_weight)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
-    model.add(Dense(10))
+    model.add(Dense(10, W_regularizer=l2(l2_weight)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
@@ -284,7 +286,7 @@ def main():
     # Load dataset.
     (X_train, y_train, X_test, y_test) = load_npz(filenames,
                                                   split=0.9,
-                                                  angle_key='angle_med5')
+                                                  angle_key='angle_med10')
     # train model.
     train_model(X_train, y_train, X_test, y_test)
 

@@ -577,6 +577,7 @@ def main():
         # Load data and 'pickle' dump.
         data = load_data(d[0], fmask=d[1])
         save_np_data(d[0], data)
+        del data
 
 if __name__ == '__main__':
     main()
