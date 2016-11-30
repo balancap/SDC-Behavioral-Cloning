@@ -21,8 +21,8 @@ SUBSAMPLING = 1
 MASK_PRE_FRAMES = 3
 MASK_POST_FRAMES = 0
 
-CAR_LENGTH = 5.9
-CAR_OFFSET = 1.5
+CAR_LENGTH = 2.6
+CAR_OFFSET = 1.2
 
 
 def image_preprocessing(img):
@@ -562,19 +562,21 @@ def create_hdf5(path):
 
 
 def main():
-    path = './data/5/'
-    path = './data/q3_clean/'
-    # path = './data/q3_recover_left2/'
-    # path = './data/q3_recover_right/'
-    print('Dataset path: ', path)
+    datasets = [
+        # ('./data/5/', None),
+        ('./data/q3_clean/', None),
+        ('./data/q3_clean2/', None),
+        ('./data/q3_recover_left/', mask_positive),
+        ('./data/q3_recover_left2/', mask_positive),
+        ('./data/q3_recover_right/', mask_negative),
+        ('./data/q3_recover_right2/', mask_negative),
+    ]
 
-    # Load data and 'pickle' dump.
-    data = load_data(path, fmask=None)
-    save_np_data(path, data)
-    # dump_data(path, data)
-
-    # HDF5 dataset.
-    # create_hdf5(path)
+    for d in datasets:
+        print('Dataset path: ', d[0])
+        # Load data and 'pickle' dump.
+        data = load_data(d[0], fmask=d[1])
+        save_np_data(d[0], data)
 
 if __name__ == '__main__':
     main()
