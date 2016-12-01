@@ -25,9 +25,9 @@ from image_preprocessing import ImageDataGenerator
 # General parameters.
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
-DECAY = 1e-5
+DECAY = 5e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 10
+NB_EPOCHS = 100
 
 SEED = 4242
 
@@ -88,7 +88,7 @@ def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
     """
-    l2_weight = 0.001
+    l2_weight = 0.0001
     model = Sequential()
 
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
