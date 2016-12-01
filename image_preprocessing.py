@@ -34,7 +34,7 @@ def random_contrast(image, lower, upper, seed=None):
     return adjust_contrast(image, contrast_factor)
 
 
-def random_hue(image, sat_lower, sat_upper, max_hue, seed=None):
+def random_saturation_hue(image, sat_lower, sat_upper, max_hue, seed=None):
     saturation_factor = random.uniform(sat_lower, sat_upper)
     hue_delta = random.uniform(-max_hue, max_hue)
     return adjust_saturation_hue(image, saturation_factor, hue_delta)
@@ -299,6 +299,12 @@ class ImageDataGenerator(object):
                  horizontal_flip=False,
                  vertical_flip=False,
                  rescale=None,
+                 brightness_delta=0.0,
+                 contrast_lower=1.0,
+                 contrast_upper=1.0,
+                 saturation_lower=1.0,
+                 saturation_upper=1.0,
+                 hue_delta=0.0,
                  dim_ordering='default'):
         if dim_ordering == 'default':
             dim_ordering = K.image_dim_ordering()
@@ -440,6 +446,30 @@ class ImageDataGenerator(object):
         if self.vertical_flip:
             if np.random.random() < 0.5:
                 x = flip_axis(x, img_row_index)
+
+        # Color random transform!
+        color_ordering = random.randint(0, 3)
+        if color_ordering == 0:
+            x = random_brightness(x, self.brightness_delta)
+            x = random_saturation_hue(x, self.saturation_lower,
+                                      self.saturation_upper, self.hue_delta)
+            x = random_contrast(x, self.contrast_lower, self.contrast_upper)
+
+        elif color_ordering == 1:
+            x = random_contrast(x, self.contrast_lower, self.contrast_upper)
+            x = random_brightness(x, self.brightness_delta)
+            x = random_saturation_hue(x, self.saturation_lower,
+                                      self.saturation_upper, self.hue_delta)
+        elif color_ordering == 2:
+            x = random_saturation_hue(x, self.saturation_lower,
+                                      self.saturation_upper, self.hue_delta)
+            x = random_contrast(x, self.contrast_lower, self.contrast_upper)
+            x = random_brightness(x, self.brightness_delta)
+        elif color_ordering == 3:
+            x = random_contrast(x, self.contrast_lower, self.contrast_upper)
+            x = random_saturation_hue(x, self.saturation_lower,
+                                      self.saturation_upper, self.hue_delta)
+            x = random_brightness(x, self.brightness_delta)
 
         # TODO:
         # channel-wise normalization

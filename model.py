@@ -54,10 +54,10 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     for path in filenames:
         data = np.load(path)
         if images is None:
-            images = data['images'].astype(np.float32) * 2 / 255. - 1.
+            images = data['images'].astype(np.float32) / 255.
             angle = data[angle_key]
         else:
-            images = np.append(images, data['images'].astype(np.float32) * 2 / 255. - 1.,
+            images = np.append(images, data['images'].astype(np.float32) / 255.,
                                axis=0)
             angle = np.append(angle, data[angle_key], axis=0)
 
@@ -220,7 +220,13 @@ def train_model(X_train, y_train, X_test, y_test):
         width_shift_range=0.,       # Random shift (fraction of total width).
         height_shift_range=0.,      # Random shift (fraction of total height).
         horizontal_flip=True,       # Random horizontal flip.
-        vertical_flip=False)        # Random vertical flip.
+        vertical_flip=False,        # Random vertical flip.
+        brightness_delta=32. / 255.,
+        contrast_lower=0.5,
+        contrast_upper=1.5,
+        saturation_lower=0.5,
+        saturation_upper=1.5,
+        hue_delta=0.2)
 
     # Compute quantities required for featurewise normalization.
     # (std, mean, and principal components if ZCA whitening is applied)
