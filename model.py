@@ -57,12 +57,10 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
             images = data['images'].astype(np.float32) / 255.
             angle = data[angle_key]
         else:
-            images = np.append(images, data['images'].astype(np.float32) / 255.,
+            images = np.append(images,
+                               data['images'].astype(np.float32) / 255.,
                                axis=0)
             angle = np.append(angle, data[angle_key], axis=0)
-
-    # Pre-process images.
-    # images *= 2
 
     # Angle translation.
     # delta = 6
@@ -76,9 +74,6 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
 
     return (images[idxes[:idx]], angle[idxes[:idx]],
             images[idxes[idx:]], angle[idxes[idx:]])
-
-    # return (images, angle,
-    #         images[idxes[idx:]], angle[idxes[idx:]])
 
 
 # ============================================================================
@@ -278,10 +273,10 @@ def main():
                  './data/q3_clean2/dataset.npz',
                  # './data/5/dataset.npz'
                  ]
-                 # './data/5/dataset.npz']
+
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
-#     filenames = ['./data/1/dataset.npz']
+    filenames = ['./data/test/dataset.npz']
     # filenames = ['./data/50hz_1/dataset.npz']
     # filenames = [
     #              './data/q3_clean/dataset.npz',

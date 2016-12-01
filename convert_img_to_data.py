@@ -410,6 +410,7 @@ def load_data(path, fmask=None):
 
             j += 1
     print('')
+    # print(np.min(data['images']), np.max(data['images']))
 
     # Compute trajectory.
     data['x'] = np.zeros((nb_types, nb_imgs, 2), dtype=np.float32)
@@ -572,6 +573,9 @@ def main():
         ('./data/q3_recover_left2/', mask_positive),
         ('./data/q3_recover_right/', mask_negative),
         ('./data/q3_recover_right2/', mask_negative),
+    ]
+    datasets = [
+        ('./data/test/', None),
     ]
 
     for d in datasets:

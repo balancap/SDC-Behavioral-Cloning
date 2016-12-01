@@ -46,7 +46,8 @@ def adjust_brightness(image, delta):
     For regular images, `delta` should be in the range `[0,1)`, as it is
     added to the image where pixel values are in the `[0,1)` range.
     """
-    return np.clip(image + delta, 0.0, 1.0)
+    out = np.clip(image + delta, 0.0, 1.0)
+    return out
 
 
 def adjust_contrast(image, contrast_factor):
@@ -59,7 +60,8 @@ def adjust_contrast(image, contrast_factor):
     out = np.zeros_like(image)
     for i in range(3):
         m = np.mean(image[:, :, i])
-        out[:, :, i] = (image - m) * contrast_factor + m
+        out[:, :, i] = (image[:, :, i] - m) * contrast_factor + m
+    out = np.clip(out, 0.0, 1.0)
     return out
 
 
