@@ -29,6 +29,7 @@ DECAY = 1e-5
 BN_EPSILON = 1e-6
 NB_EPOCHS = 20
 ANGLE_KEY = 'angle_med6'
+L2_WEIGHT = 0.0001
 SEED = 4242
 
 # Color preprocessing.
@@ -92,6 +93,7 @@ def save_hyperparameters(ckpt_path):
         'BATCH_SIZE': BATCH_SIZE,
         'LEARNING_RATE': LEARNING_RATE,
         'DECAY': DECAY,
+        'L2_WEIGHT': L2_WEIGHT,
         'BN_EPSILON': BN_EPSILON,
         'ANGLE_KEY': ANGLE_KEY,
         'IMAGE_SIZE': (IMG_ROWS, IMG_COLS),
@@ -106,7 +108,7 @@ def save_hyperparameters(ckpt_path):
     }
     with open(ckpt_path + 'hyperparameters.json', 'w') as f:
         json.dump(hyperparams, f,
-                  indent=4, separators=(',', ': '))
+                  indent=4, separators=(',', ': '), sort_keys=True)
 
 
 # ============================================================================
@@ -116,7 +118,6 @@ def cnn_model(shape):
     """Create the model learning the behavioral cloning from driving data.
     Inspired by NVIDIA paper on this topic.
     """
-    l2_weight = 0.0001
     model = Sequential()
 
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
@@ -187,18 +188,18 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
-    model.add(Dense(100, W_regularizer=l2(l2_weight)))
+    model.add(Dense(100, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(Dropout(0.5))
 
-    model.add(Dense(50, W_regularizer=l2(l2_weight)))
+    model.add(Dense(50, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
-    model.add(Dense(10, W_regularizer=l2(l2_weight)))
+    model.add(Dense(10, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
