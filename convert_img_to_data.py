@@ -383,7 +383,9 @@ def load_data(path, fmask=None):
             data['images'][0, j] = image_preprocessing(img)
 
             # Car data.
-            data['angle'][0, j] = float(a[3])
+            angle_factor = 25 / 180. * np.pi
+            angle_factor = 1.0
+            data['angle'][0, j] = float(a[3]) * angle_factor
             data['throttle'][0, j] = float(a[4])
             data['speed'][0, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
             data['dt'][0, j] = dt
@@ -393,7 +395,7 @@ def load_data(path, fmask=None):
                 img = mpimg.imread(filename_left)
                 data['images'][1, j] = image_preprocessing(img)
 
-                data['angle'][1, j] = float(a[3])
+                data['angle'][1, j] = float(a[3]) * angle_factor
                 data['throttle'][1, j] = float(a[4])
                 data['speed'][1, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
                 data['dt'][1, j] = dt
@@ -401,7 +403,7 @@ def load_data(path, fmask=None):
                 img = mpimg.imread(filename_right)
                 data['images'][2, j] = image_preprocessing(img)
 
-                data['angle'][2, j] = float(a[3])
+                data['angle'][2, j] = float(a[3]) * angle_factor
                 data['throttle'][2, j] = float(a[4])
                 data['speed'][2, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
                 data['dt'][2, j] = dt
