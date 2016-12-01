@@ -29,6 +29,7 @@ DECAY = 1e-5
 BN_EPSILON = 1e-6
 NB_EPOCHS = 20
 ANGLE_KEY = 'angle_med6'
+ANGLE_WEIGHT = 0.0
 L2_WEIGHT = 0.0001
 SEED = 4242
 
@@ -96,6 +97,7 @@ def save_hyperparameters(ckpt_path):
         'L2_WEIGHT': L2_WEIGHT,
         'BN_EPSILON': BN_EPSILON,
         'ANGLE_KEY': ANGLE_KEY,
+        'ANGLE_WEIGHT': ANGLE_WEIGHT,
         'IMAGE_SIZE': (IMG_ROWS, IMG_COLS),
         'PRE-PROCESSING': {
             'BRIGHTNESS_DELTA': BRIGHTNESS_DELTA,
@@ -225,7 +227,7 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
     print('X_train shape:', X_train.shape)
 
     # Training weights: more on large angles.
-    y_weights = np.ones_like(y_train) + 0. * np.abs(y_train)
+    y_weights = np.ones_like(y_train) + ANGLE_WEIGHT * np.abs(y_train)
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
