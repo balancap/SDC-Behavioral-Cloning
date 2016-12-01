@@ -5,17 +5,80 @@ new preprocessing methods, etc...
 from __future__ import absolute_import
 from __future__ import print_function
 
-import numpy as np
+import os
 import re
+
+import numpy as np
 from scipy import linalg
 import scipy.ndimage as ndi
+from skimage import color
+import random
+
 from six.moves import range
-import os
 import threading
 
 from keras import backend as K
 
 
+# ============================================================================
+# Additional random image transform.
+# ============================================================================
+def random_brightness(image, max_delta, seed=None):
+    delta = random.uniform(-max_delta, max_delta)
+    return adjust_brightness(image, delta)
+
+
+def random_contrast(image, lower, upper, seed=None):
+    # Generate an a float in [lower, upper]
+    contrast_factor = random.uniform(lower, upper)
+    return adjust_contrast(image, contrast_factor)
+
+
+def random_hue(image, sat_lower, sat_upper, max_hue, seed=None):
+    saturation_factor = random.uniform(sat_lower, sat_upper)
+    hue_delta = random.uniform(-max_hue, max_hue)
+    return adjust_saturation_hue(image, saturation_factor, hue_delta)
+
+
+def adjust_brightness(image, delta):
+    """Adjust the brightness of RGB images.
+    The value `delta` is added to all components of the `image`.
+    For regular images, `delta` should be in the range `[0,1)`, as it is
+    added to the image where pixel values are in the `[0,1)` range.
+    """
+    return np.clip(image + delta, 0.0, 1.0)
+
+
+def adjust_contrast(image, contrast_factor):
+    """Adjust contrast of RGB images.
+    Contrast is adjusted independently for each channel of each image.
+    For each channel, it computes the mean of the image pixels in the
+    channel and then adjusts each component `x` of each pixel to
+    `(x - mean) * contrast_factor + mean`.
+    """
+    out = np.zeros_like(image)
+    for i in range(3):
+        m = np.mean(image[:, :, i])
+        out[:, :, i] = (image - m) * contrast_factor + m
+    return out
+
+
+def adjust_saturation_hue(image, saturation_factor, hue_delta):
+    """Adjust saturation and hue of an RGB image.
+    Converts to HSV, add an offset to the saturation channel and
+    converts back to RGB.
+    """
+    img_hsv = color.rgb2hsv(image)
+    # Adjust saturation and hue channels.
+    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * saturation_factor, 0.0, 1.0)
+    img_hsv[:, :, 0] = np.mod(img_hsv[:, :, 0] + 1. + hue_delta, 1.0)
+    # Back to RGB mod.
+    return color.hsv2rgb(img_hsv)
+
+
+# ============================================================================
+# Original Keras pre-processing
+# ============================================================================
 def random_rotation(x, rg, row_index=1, col_index=2, channel_index=0,
                     fill_mode='nearest', cval=0.):
     theta = np.pi / 180 * np.random.uniform(-rg, rg)
