@@ -574,9 +574,9 @@ def main():
         ('./data/q3_recover_right/', mask_negative),
         ('./data/q3_recover_right2/', mask_negative),
     ]
-    datasets = [
-        ('./data/test/', None),
-    ]
+    # datasets = [
+    #     ('./data/test3/', None),
+    # ]
 
     for d in datasets:
         print('Dataset path: ', d[0])

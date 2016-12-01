@@ -214,14 +214,14 @@ def train_model(X_train, y_train, X_test, y_test):
         rotation_range=0,           # Randomly rotate images.
         width_shift_range=0.,       # Random shift (fraction of total width).
         height_shift_range=0.,      # Random shift (fraction of total height).
-        horizontal_flip=True,       # Random horizontal flip.
-        vertical_flip=False,        # Random vertical flip.
         brightness_delta=32. / 255.,
-        contrast_lower=0.5,
-        contrast_upper=1.5,
-        saturation_lower=0.5,
-        saturation_upper=1.5,
-        hue_delta=0.2)
+        contrast_lower=0.3,
+        contrast_upper=1.7,
+        saturation_lower=0.3,
+        saturation_upper=1.7,
+        hue_delta=0.2,
+        horizontal_flip=True,       # Random horizontal flip.
+        vertical_flip=False)        # Random vertical flip.
 
     # Compute quantities required for featurewise normalization.
     # (std, mean, and principal components if ZCA whitening is applied)
@@ -237,8 +237,8 @@ def train_model(X_train, y_train, X_test, y_test):
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
                                      sample_weight=y_weights,
-                                     # save_to_dir='./img/',
-                                     # save_format='png',
+                                     save_to_dir='./img/',
+                                     save_format='png',
                                      shuffle=True),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCHS,
@@ -276,7 +276,7 @@ def main():
 
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
-    filenames = ['./data/test/dataset.npz']
+    filenames = ['./data/test3/dataset.npz']
     # filenames = ['./data/50hz_1/dataset.npz']
     # filenames = [
     #              './data/q3_clean/dataset.npz',
