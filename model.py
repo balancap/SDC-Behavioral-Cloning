@@ -108,7 +108,7 @@ def save_hyperparameters(ckpt_path):
             'HUE_DELTA': HUE_DELTA
         }
     }
-    print('Hyper-parameters: ' hyperparams)
+    print('Hyper-parameters: ', hyperparams)
     with open(ckpt_path + 'hyperparameters.json', 'w') as f:
         json.dump(hyperparams, f,
                   indent=4, separators=(',', ': '), sort_keys=True)
