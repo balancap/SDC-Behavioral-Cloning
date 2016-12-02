@@ -1,4 +1,4 @@
-DIR="./logs/log9"
+DIR="./logs/log10"
 mkdir $DIR
 mv logs/model* $DIR
 mv logs/events* $DIR
