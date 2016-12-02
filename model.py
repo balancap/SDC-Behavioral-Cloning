@@ -23,14 +23,14 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
 NB_EPOCHS = 20
-ANGLE_KEY = 'angle_med6'
-ANGLE_WEIGHT = 0.0
-L2_WEIGHT = 0.0001
+ANGLE_KEY = 'angle_med15'
+ANGLE_WEIGHT = 10.0
+L2_WEIGHT = 0.001
 SEED = 4242
 
 # Color preprocessing.
@@ -108,6 +108,7 @@ def save_hyperparameters(ckpt_path):
             'HUE_DELTA': HUE_DELTA
         }
     }
+    print('Hyper-parameters: ' hyperparams)
     with open(ckpt_path + 'hyperparameters.json', 'w') as f:
         json.dump(hyperparams, f,
                   indent=4, separators=(',', ': '), sort_keys=True)
@@ -278,7 +279,7 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
                                     histogram_freq=0,
                                     write_graph=True,
                                     write_images=True),
-        keras.callbacks.ModelCheckpoint(ckpt_path + 'model.{epoch:02d}-{val_loss:.2f}.h5',
+        keras.callbacks.ModelCheckpoint(ckpt_path + 'model.{epoch:03d}-{val_loss:.4f}.h5',
                                         monitor='val_loss',
                                         verbose=1,
                                         save_best_only=True,
@@ -297,9 +298,9 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
                         verbose=1,
                         validation_data=(X_test, y_test),
                         callbacks=callbacks,
-                        max_q_size=10,
-                        nb_worker=1,
-                        pickle_safe=False)
+                        max_q_size=30,
+                        nb_worker=8,
+                        pickle_safe=True)
 
     # Save model parameters.
     model.save(ckpt_path + 'model.h5')

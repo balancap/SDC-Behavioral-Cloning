@@ -18,11 +18,11 @@ import matplotlib.image as mpimg
 IMG_SHAPE = (95, 320, 3)
 SUBSAMPLING = 1
 
-MASK_PRE_FRAMES = 3
+MASK_PRE_FRAMES = 1
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 2.6
-CAR_OFFSET = 1.2
+CAR_OFFSET = 1.
 
 
 def image_preprocessing(img):
@@ -270,6 +270,9 @@ def angle_median(alpha, dt, speed, delta=1, offset=0.0, length=CAR_LENGTH):
     P0 = np.zeros(shape=(len(alpha), 2), dtype=np.float32)
     P0[:, 0] = offset
     P1 = cumul_dx
+
+    mask = (P1[:, 1] < 0.)
+    P1[mask, 1] = 0.0
 
     # Parameters in equation: ax - b = 0.
     a = P1 - P0

@@ -24,7 +24,7 @@ prev_image_array = None
 
 def image_preprocessing(img):
     img = img.astype(np.float32) / 255.
-    img = 2. * img - 1.
+    # img = 2. * img - 1.
 
     # Cut bottom and top.
     img = img[50:-15, :, :]
@@ -51,7 +51,7 @@ def telemetry(sid, data):
     transformed_image_array = image_array[None, :, :, :]
 
     # This model currently assumes that the features of the model are just the images. Feel free to change this.
-    steering_angle = float(model.predict(transformed_image_array, batch_size=1)) * 2
+    steering_angle = float(model.predict(transformed_image_array, batch_size=1)) * 1.
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
     throttle = 0.5
     print(steering_angle, throttle)
@@ -76,12 +76,20 @@ if __name__ == '__main__':
     parser.add_argument('model', type=str,
         help='Path to model definition json. Model weights should be on the same path.')
     args = parser.parse_args()
-    with open(args.model, 'r') as jfile:
+
+    # Model path.
+    path = args.model
+    root = path.split('.')[0]
+
+    # Load model description
+    jpath = root + '.json'
+    with open(jpath, 'r') as jfile:
         model = model_from_json(json.load(jfile))
 
+    # Load model weights.
     model.compile("adam", "mse")
-    weights_file = args.model.replace('json', 'h5')
-    model.load_weights(weights_file)
+    wpath = args.model.replace('json', 'h5')
+    model.load_weights(wpath)
 
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)
