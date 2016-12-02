@@ -16,7 +16,15 @@ Here are the main files constituting the project:
 
 ## Data pre-processing
 
-The pre-processing component of this project happened to be the most challenging part, partially due to my computer set-up. Like a few other students, I could only use my keyboard to drive and generate data on the simulator. As many have experienced, keyboard and game pad generate very different types of steering data, as shown by in the following graph (courtesy of Patrick Kern on Slack):
+As a main dataset for training the network, I used the following data on the first track:
+* 6 normal laps;
+* 6 normal counter-clock laps;
+* 3 laps recovering from the left-side of the track;
+* 3 laps recovering from the right-side of the track.
+
+To generate the two latter datasets, I selected from the generated data frames with positive (resp. negative) angles.
+
+The pre-processing component of the previous dataset happened to be the most challenging part, partially due to my computer set-up. Like a few other students, I could only use my keyboard to drive and generate data on the simulator. As many have experienced, keyboard and game pad generate very different types of steering data, as shown by in the following graph (courtesy of Patrick Kern on Slack):
 
 ![](images/figure_kern.png "Keyboard vs Game Pad")
 
@@ -24,11 +32,27 @@ The keyboard output is clearly much more noisy and sparse compared to the smooth
 
 Hence, I spend quite some time and effort trying to improve the steering angle data (even though far more time consuming, I found intellectually more challenging and interesting than buying a cheap Game Pad on Amazon !). A naive and simple approach to this problem could be to simply apply some smoothing filtering on the steering data (typically, exponential smoothing). As I discovered, the main problem with this simple solution is that the smooth output data does not necessarily make sense in terms of car physics. Namely, if one replace a one-pulse angle by an average over 5 or 10 frames, the car will not end up at the same position after these 5 / 10 frames. The physical system is clearly non-linear!
 
-Consequently, one needs a more advanced strategy to tackle this smoothing problem. Inspired by the Nvidia team work, I deciced to take a more scientific and physical approach. The data provided by the simulator (steering angle, speed and frame rate) allows to re-construct (up to a certain precision) the trajectory of the car using known car physics (see this [page](http://www.asawicki.info/Mirror/Car%20Physics%20for%20Games/Car%20Physics%20for%20Games.html) for a reference on the topic). The algorithm, described in the function `trajectory` in the file `convert_img_to_data.py` is not very complex: for every frame, the angle allows to deduce the turning radius and displacement vectors, thus the next position. Updating the rotation matrix with this data, one can repeat this operation and obtain a re-construction of the trajectory.
+Consequently, one needs a more advanced strategy to tackle this smoothing problem. Inspired by the Nvidia team work, I decided to take a more scientific and physical approach. The data provided by the simulator (steering angle, speed and frame rate) allows to re-construct (up to a certain precision) the trajectory of the car using known car physics (see this [page](http://www.asawicki.info/Mirror/Car%20Physics%20for%20Games/Car%20Physics%20for%20Games.html) for a reference on the topic). The algorithm, described in the function `trajectory` in the file `convert_img_to_data.py` is not very complex: for every frame, the angle allows to deduce the turning radius and displacement vectors, thus the next position. Updating the rotation matrix with this data, one can repeat this operation and obtain a re-construction of the trajectory.
 
 ![](images/trajectory.png "The drunk Udacity driver in action.")
 
 As one can see on the picture above, the reconstruction is not perfect. If ones can recognise the shape of the track, the different laps do not overlap perfectly. There is an explanation for this error accumulating: I used a very simple physical model to simulate the car turning, which is only realistic at very low speed (as it does not take into account the momentum of the car), and thus does not match completely the more advanced model integrated in the simulator. 
+
+The good news is that approximation does not matter for us! Indeed, in order to smooth the steering angle, one only needs to a good local approximation of the trajectory. Indeed, we obtain a smoothed angle output by looking at a time horizon of around 10 frames (i.e. 1 second) and then compute the proper steering angle to be at this position after these 10 frames. Anticipating the car movement over 1 second allows to smooth the steering angle, and remove the pulse behaviour typical of the keyboard output (which is basically a 1 frame anticipating scheme).
+
+More specifically, we tried two different methods to compute the smoothed steering angle:
+* Using the [curvature](https://en.wikipedia.org/wiki/Curvature) of the trajectory over 1 second period (implemented in the function `angle_curvature`);
+* Calculating the steering angle using two datapoints (0 and 10 frames) and the car direction (implemented in the function `angle_median`).
+
+If we observed that the first method gave a smoother steering estimate, the latter makes more sense physically, and thus led to better training of the neural network.
+
+![](images/smoothed_angle.png "Ha ha ha !")
+
+As we can observe, our smoothing methodology led a massive improvement of the steering data. Note the choice of the time period (between 5 and 20 frames) is a compromise between smoothing the signal and obtaining a realistic angle for controlling the car (one easily understand that calculating an angle over a period of 20 seconds gives very smooth data but does not make sense!). In our case, we decided to settle for 10 frames (i.e. 1 second) to compute the smoothed angle. It seems indeed quite realistic that the road seen by the driver is enough to anticipate the trajectory for the next second.
+
+
+
+
 
 ## Network architecture and training
 
