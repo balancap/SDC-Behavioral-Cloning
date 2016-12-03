@@ -22,7 +22,7 @@ MASK_PRE_FRAMES = 1
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 2.6
-CAR_OFFSET = 1.
+CAR_OFFSET = 2.
 
 
 def image_preprocessing(img):
@@ -387,7 +387,7 @@ def load_data(path, fmask=None):
 
             # Car data.
             angle_factor = 25 / 180. * np.pi
-            angle_factor = 1.0
+            # angle_factor = 1.0
             data['angle'][0, j] = float(a[3]) * angle_factor
             data['throttle'][0, j] = float(a[4])
             data['speed'][0, j] = float(a[6]) * 1.609344 / 3.6  # to m/s

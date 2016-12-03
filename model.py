@@ -27,10 +27,10 @@ BATCH_SIZE = 16
 LEARNING_RATE = 0.001
 DECAY = 1e-5
 BN_EPSILON = 1e-6
-NB_EPOCHS = 20
-ANGLE_KEY = 'angle_med15'
-ANGLE_WEIGHT = 10.0
-L2_WEIGHT = 0.001
+NB_EPOCHS = 10
+ANGLE_KEY = 'angle_med10'
+ANGLE_WEIGHT = 0.0
+L2_WEIGHT = 0.000
 SEED = 4242
 
 # Color preprocessing.
@@ -132,7 +132,7 @@ def cnn_model(shape):
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    # model.add(AveragePooling2D(pool_size=(2, 2), strides=None, border_mode='valid'))
+    # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
     print('Layer 1: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(36, 5, 5,
@@ -141,7 +141,7 @@ def cnn_model(shape):
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
-    # model.add(MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode='same'))
+    # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
     # model.add(Convolution2D(48, 5, 5,
@@ -189,23 +189,27 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(100, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
-    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
-    model.add(Dropout(0.5))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    model.add(keras.layers.advanced_activations.PReLU())
+    # model.add(Dropout(0.5))
 
     model.add(Dense(50, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
-    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    model.add(keras.layers.advanced_activations.PReLU())
+    # model.add(Dropout(0.5))
 
     model.add(Dense(10, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
-    model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    model.add(keras.layers.advanced_activations.PReLU())
+    # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
 
     model.add(Dense(1))
     return model
@@ -316,7 +320,7 @@ def main():
                  './data/q3_recover_left2/dataset.npz',
                  './data/q3_recover_right2/dataset.npz',
                  './data/q3_clean/dataset.npz',
-                 './data/q3_clean2/dataset.npz',
+                 # './data/q3_clean2/dataset.npz',
                  # './data/5/dataset.npz'
                  ]
 
