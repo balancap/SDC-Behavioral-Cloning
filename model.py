@@ -26,11 +26,11 @@ from image_preprocessing import ImageDataGenerator
 BATCH_SIZE = 16
 LEARNING_RATE = 0.001
 DECAY = 1e-5
-BN_EPSILON = 1e-6
-NB_EPOCHS = 10
+BN_EPSILON = 1.0
+NB_EPOCHS = 20
 ANGLE_KEY = 'angle_med10'
-ANGLE_WEIGHT = 0.0
-L2_WEIGHT = 0.000
+ANGLE_WEIGHT = 10.0
+L2_WEIGHT = 0.00001
 SEED = 4242
 
 # Color preprocessing.
@@ -43,7 +43,7 @@ HUE_DELTA = 0.2
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
-IMG_ROWS, IMG_COLS = 95, 320
+IMG_ROWS, IMG_COLS = 105, 320
 IMG_CHANNELS = 3
 
 
@@ -123,7 +123,7 @@ def cnn_model(shape):
     """
     model = Sequential()
 
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999, input_shape=shape))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.9999, input_shape=shape))
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             subsample=(2, 2),
@@ -163,6 +163,14 @@ def cnn_model(shape):
 
     print('Layer 3: ', model.layers[-1].output_shape)
 
+    model.add(Convolution2D(54, 5, 5,
+                            # subsample=(2, 2),
+                            # init='normal',
+                            border_mode='valid'))
+    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    model.add(Activation('relu'))
+    print('Layer 3b: ', model.layers[-1].output_shape)
+
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             # init='normal',
@@ -178,32 +186,38 @@ def cnn_model(shape):
     model.add(Activation('relu'))
     print('Layer 5: ', model.layers[-1].output_shape)
 
-    model.add(Convolution2D(96, 3, 3,
-                            # init='normal',
-                            border_mode='valid'))
-    model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
-    model.add(Activation('relu'))
-    print('Layer 6: ', model.layers[-1].output_shape)
+    # model.add(Convolution2D(96, 3, 3,
+    #                         # init='normal',
+    #                         border_mode='valid'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    # model.add(Activation('relu'))
+    # print('Layer 6: ', model.layers[-1].output_shape)
 
     # Flatten + FC layers.
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
+
+    # model.add(Dense(1000, W_regularizer=l2(L2_WEIGHT)))
+    # # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
+    # # model.add(Activation('relu'))
+    # # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
+    # model.add(keras.layers.advanced_activations.PReLU())
 
     model.add(Dense(100, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(50, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(10, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -237,7 +251,7 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
     # Train the model using Adam.
-    # optimizer = SGD(lr=LEARNING_RATE, decay=1e-6, momentum=0.9, nesterov=True)
+    # optimizer = SGD(lr=LEARNING_RATE, decay=DECAY, momentum=0.9, nesterov=True)
     # optimizer = keras.optimizers.RMSprop(lr=LEARNING_RATE, decay=DECAY,
     #                                      rho=0.9, epsilon=1e-08)
     optimizer = keras.optimizers.Adam(lr=LEARNING_RATE, decay=DECAY,
@@ -320,7 +334,7 @@ def main():
                  './data/q3_recover_left2/dataset.npz',
                  './data/q3_recover_right2/dataset.npz',
                  './data/q3_clean/dataset.npz',
-                 # './data/q3_clean2/dataset.npz',
+                 './data/q3_clean2/dataset.npz',
                  # './data/5/dataset.npz'
                  ]
 

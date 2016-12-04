@@ -15,6 +15,7 @@ from io import BytesIO
 from keras.models import model_from_json
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array
 
+from skimage import color
 
 sio = socketio.Server()
 app = Flask(__name__)
@@ -27,7 +28,10 @@ def image_preprocessing(img):
     # img = 2. * img - 1.
 
     # Cut bottom and top.
-    img = img[50:-15, :, :]
+    img = img[55:, :, :]
+
+    # img = color.rgb2hsv(img)
+    # img = 2 * img - 1
 
     # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
     # out = out[34:-10, :, :]
@@ -51,10 +55,14 @@ def telemetry(sid, data):
     transformed_image_array = image_array[None, :, :, :]
 
     # This model currently assumes that the features of the model are just the images. Feel free to change this.
-    steering_angle = float(model.predict(transformed_image_array, batch_size=1)) * 2.5
+    angle_factor = 180. / 25. / np.pi * 1.2
+    steering_angle = float(model.predict(transformed_image_array, batch_size=1)) * angle_factor
     # The driving model currently just outputs a constant throttle. Feel free to edit this.
     throttle = 0.5
-    print(steering_angle, throttle)
+
+    print('Steering: %.3f | Throttle: %.3f | Factor: %.3f' % (steering_angle,
+                                                              throttle,
+                                                              angle_factor))
     send_control(steering_angle, throttle)
 
 

@@ -385,6 +385,8 @@ class ImageDataGenerator(object):
             whitex = np.dot(flatx, self.principal_components)
             x = np.reshape(whitex, (x.shape[0], x.shape[1], x.shape[2]))
 
+        # x = color.rgb2hsv(x)
+        # x = 2 * x - 1
         return x
 
     def random_transform(self, x, y):

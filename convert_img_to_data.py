@@ -15,20 +15,20 @@ import numpy as np
 import matplotlib.image as mpimg
 
 # IMG_SHAPE = (160, 320, 3)
-IMG_SHAPE = (95, 320, 3)
+IMG_SHAPE = (105, 320, 3)
 SUBSAMPLING = 1
 
 MASK_PRE_FRAMES = 1
 MASK_POST_FRAMES = 0
 
 CAR_LENGTH = 2.6
-CAR_OFFSET = 2.
+CAR_OFFSET = 1.
 
 
 def image_preprocessing(img):
     # Cut bottom and top.
     out = img
-    out = out[50:-15, :, :]
+    out = out[55:, :, :]
     # out = cv2.resize(out, (IMG_SHAPE[1], IMG_SHAPE[0]), interpolation=cv2.INTER_LANCZOS4)
     # out = out[34:-10, :, :]
     # out = cv2.cvtColor(out, cv2.COLOR_BGR2HLS)
@@ -322,7 +322,7 @@ def angle_curvature(x, delta=1, length=CAR_LENGTH):
 # ============================================================================
 # Load / Save data: old way!
 # ============================================================================
-def load_data(path, fmask=None):
+def load_data(path, fmask=None, offset=None):
     """Load DATA from path: images + car information.
 
     Return:
@@ -404,12 +404,12 @@ def load_data(path, fmask=None):
                 data['dt'][1, j] = dt
 
                 img = mpimg.imread(filename_right)
-                data['images'][2, j] = image_preprocessing(img)
+                data['images'][-1, j] = image_preprocessing(img)
 
-                data['angle'][2, j] = float(a[3]) * angle_factor
-                data['throttle'][2, j] = float(a[4])
-                data['speed'][2, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
-                data['dt'][2, j] = dt
+                data['angle'][-1, j] = float(a[3]) * angle_factor
+                data['throttle'][-1, j] = float(a[4])
+                data['speed'][-1, j] = float(a[6]) * 1.609344 / 3.6  # to m/s
+                data['dt'][-1, j] = dt
 
             j += 1
     print('')
@@ -423,8 +423,8 @@ def load_data(path, fmask=None):
                                                 data['angle'][0])
     # Left - right copy of x and alpha.
     if nb_types > 1:
-        data['x'][2] = data['x'][1] = data['x'][0]
-        data['alpha'][2] = data['alpha'][1] = data['alpha'][0]
+        data['x'][-1] = data['x'][1] = data['x'][0]
+        data['alpha'][-1] = data['alpha'][1] = data['alpha'][0]
 
     # Post-processing: curvature angle.
     cv_scales = [2, 3, 4, 6, 8]
@@ -435,7 +435,7 @@ def load_data(path, fmask=None):
     if nb_types > 1:
         for s in cv_scales:
             k = 'angle_cv%i' % s
-            data[k][2] = data[k][1] = data[k][0]
+            data[k][-1] = data[k][1] = data[k][0]
 
     # Post-processing: post-angles.
     post_scales = [5, 10, 20, 30, 40, 50]
@@ -451,11 +451,11 @@ def load_data(path, fmask=None):
             data[k][1] = angle_post(data['alpha'][0],
                                     data['dt'][0], data['speed'][0],
                                     delta=s,
-                                    offset=-CAR_OFFSET)
-            data[k][2] = angle_post(data['alpha'][0],
-                                    data['dt'][0], data['speed'][0],
-                                    delta=s,
-                                    offset=CAR_OFFSET)
+                                    offset=offset[0])
+            data[k][-1] = angle_post(data['alpha'][0],
+                                     data['dt'][0], data['speed'][0],
+                                     delta=s,
+                                     offset=offset[1])
 
     med_scales = [4, 6, 8, 10, 15, 20]
     for s in med_scales:
@@ -470,11 +470,11 @@ def load_data(path, fmask=None):
             data[k][1] = angle_median(data['alpha'][0],
                                       data['dt'][0], data['speed'][0],
                                       delta=s,
-                                      offset=-CAR_OFFSET)
-            data[k][2] = angle_median(data['alpha'][0],
-                                      data['dt'][0], data['speed'][0],
-                                      delta=s,
-                                      offset=CAR_OFFSET)
+                                      offset=offset[0])
+            data[k][-1] = angle_median(data['alpha'][0],
+                                       data['dt'][0], data['speed'][0],
+                                       delta=s,
+                                       offset=offset[1])
 
     # Cutting last values.
     cutting = 30
@@ -570,12 +570,12 @@ def create_hdf5(path):
 def main():
     datasets = [
         # ('./data/5/', None),
-        ('./data/q3_clean/', None),
-        ('./data/q3_clean2/', None),
-        ('./data/q3_recover_left/', mask_positive),
-        ('./data/q3_recover_left2/', mask_positive),
-        ('./data/q3_recover_right/', mask_negative),
-        ('./data/q3_recover_right2/', mask_negative),
+        ('./data/q3_clean/', None, (-2, 2)),
+        ('./data/q3_clean2/', None, (-2, 2)),
+        ('./data/q3_recover_left/', mask_positive, (-2, 0)),
+        ('./data/q3_recover_left2/', mask_positive, (-2, 0)),
+        ('./data/q3_recover_right/', mask_negative, (0, 2)),
+        ('./data/q3_recover_right2/', mask_negative, (0, 2)),
     ]
     # datasets = [
     #     ('./data/test3/', None),
@@ -584,7 +584,7 @@ def main():
     for d in datasets:
         print('Dataset path: ', d[0])
         # Load data and 'pickle' dump.
-        data = load_data(d[0], fmask=d[1])
+        data = load_data(d[0], fmask=d[1], offset=d[2])
         save_np_data(d[0], data)
         del data
 
