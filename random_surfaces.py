@@ -5,7 +5,7 @@ import numpy as np
 import numba
 
 
-@numba.jit(nopython=True, cache=True)
+# @numba.jit(nopython=True, cache=True)
 def fbm2d_midpoint(shape, H, stationary=False):
     """Simulation of a 2D fBm (somehow!) using the midpoint algorithm.
 
@@ -29,7 +29,7 @@ def fbm2d_midpoint(shape, H, stationary=False):
     """
     # Find the number of levels!
     N = max(shape[0], shape[1])
-    nlevels = np.ceil(np.log(N-1) / np.log(2))
+    nlevels = int(np.ceil(np.log(N-1) / np.log(2)))
 
     # First grid approximation.
     Z = np.zeros((2, 2), dtype=np.float32)
@@ -39,10 +39,11 @@ def fbm2d_midpoint(shape, H, stationary=False):
         Z[1, 0] = np.random.normal(0., 1.)
         Z[1, 1] = np.random.normal(0., 1.) * np.sqrt(2**H)
     else:
-        Z[0, 0] = np.random.normal(0., 1.)
-        Z[0, 1] = np.random.normal(0., 1.)
-        Z[1, 0] = np.random.normal(0., 1.)
-        Z[1, 1] = np.random.normal(0., 1.)
+        # Z[0, 0] = np.random.normal(0., 1.)
+        # Z[0, 1] = np.random.normal(0., 1.)
+        # Z[1, 0] = np.random.normal(0., 1.)
+        # Z[1, 1] = np.random.normal(0., 1.)
+        Z = np.random.randn(2, 2)
 
     for lv in range(1, nlevels+1):
         Y = np.zeros((2**lv+1, 2**lv+1), dtype=np.float32)
@@ -53,29 +54,42 @@ def fbm2d_midpoint(shape, H, stationary=False):
         varc = (1. - 1./4*2**H - 1./8*2**(2*H)) * 2**(-2*lv*H+H)
         vara = (1. - 2**(2*H-2)) * 2**(-2*lv*H)
 
-        # Simulation of remaining intermediate points.
-        for m in range(2**(lv-1)):
-            for l in range(2**(lv-1)):
-                x = 2*l + 1
-                y = 2*m + 1
+        # Linear interpolation.
+        Y[1::2, ::2] += 0.5 * Z[1:, :] + 0.5 * Z[:-1, :]
+        Y[::2, 1::2] += 0.5 * Z[:, 1:] + 0.5 * Z[:, :-1]
 
-                # Center - right - top points.
-                Y[x, y] = np.sqrt(varc) * np.random.normal() + \
-                    0.25 * (Y[x-1, y-1] + Y[x-1, y+1] + Y[x+1, y+1] + Y[x+1, y-1])
+        Y[1::2, 1::2] += 0.25 * Z[1:, 1:] + 0.25 * Z[:-1, :-1] + \
+            0.25 * Z[:-1, 1:] + 0.25 * Z[1:, :-1]
 
-                Y[x+1, y] = np.sqrt(vara) * np.random.normal() + \
-                    0.5 * (Y[x+1, y-1] + Y[x+1, y+1])
+        # Add random noise.
+        zshape = Z.shape
+        Y[1::2, ::2] += np.random.randn(zshape[0]-1, zshape[1]) * np.sqrt(vara)
+        Y[::2, 1::2] += np.random.randn(zshape[0], zshape[1]-1) * np.sqrt(vara)
+        Y[1::2, 1::2] += np.random.randn(zshape[0]-1, zshape[1]-1) * np.sqrt(varc)
 
-                Y[x, y+1] = np.sqrt(vara) * np.random.normal() + \
-                    0.5 * (Y[x-1, y+1] + Y[x+1, y+1])
+        # # Simulation of remaining intermediate points.
+        # for m in range(2**(lv-1)):
+        #     for l in range(2**(lv-1)):
+        #         x = 2*l + 1
+        #         y = 2*m + 1
 
-                # Point below and left (left and right axis).
-                if m == 0:
-                    Y[x, y-1] = np.sqrt(vara) * np.random.normal() + \
-                        0.5 * (Y[x-1, y-1] + Y[x+1, y-1])
-                if l == 0:
-                    Y[x-1, y] = np.sqrt(vara) * np.random.normal() + \
-                        0.5 * (Y[x-1, y-1] + Y[x-1, y+1])
+        #         # Center - right - top points.
+        #         Y[x, y] = np.sqrt(varc) * np.random.normal() + \
+        #             0.25 * (Y[x-1, y-1] + Y[x-1, y+1] + Y[x+1, y+1] + Y[x+1, y-1])
+
+        #         Y[x+1, y] = np.sqrt(vara) * np.random.normal() + \
+        #             0.5 * (Y[x+1, y-1] + Y[x+1, y+1])
+
+        #         Y[x, y+1] = np.sqrt(vara) * np.random.normal() + \
+        #             0.5 * (Y[x-1, y+1] + Y[x+1, y+1])
+
+        #         # Point below and left (left and right axis).
+        #         if m == 0:
+        #             Y[x, y-1] = np.sqrt(vara) * np.random.normal() + \
+        #                 0.5 * (Y[x-1, y-1] + Y[x+1, y-1])
+        #         if l == 0:
+        #             Y[x-1, y] = np.sqrt(vara) * np.random.normal() + \
+        #                 0.5 * (Y[x-1, y-1] + Y[x-1, y+1])
 
         Z = Y
 
