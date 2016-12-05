@@ -72,7 +72,7 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
         print('Loading dataset:', path)
         data = np.load(path)
         if images is None:
-            images = data['images'].astype(np.float32)
+            images = data['images'].astype(np.float16)
             angle = data[angle_key]
         else:
             # Resize images and append data.
