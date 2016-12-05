@@ -1,6 +1,6 @@
 # Udacity Self Driving Car Nanodegree - Behavioral Cloning
 
-Third project of the Udacity Nanodegree, and until now, the most challenging and fun one! What is this about? Basically, re-implement a simple version of the recent [article](https://arxiv.org/pdf/1604.07316v1.pdf) from Nvidia research team who described a neural network being able to perform end-to-end learning on self-driving cars. 
+Third project of the Udacity Nanodegree, and until now, the most challenging and fun one! What is this about? Basically, re-implement a simple version of the recent [article](https://arxiv.org/pdf/1604.07316v1.pdf) from Nvidia research team who described a neural network being able to perform end-to-end learning on self-driving cars.
 
 For that purpose, the Udacity team designed a simple simulator which let us acquire data (i.e. cameras, steering angle, speed and gas) and then test our solution of a self-driving neural network.
 
@@ -24,7 +24,7 @@ As a main dataset for training the network, I used the following data on the fir
 
 To generate the two latter datasets, I selected from the generated data frames with positive (resp. negative) angles.
 
-### Angle pre-processing 
+### Angle pre-processing
 
 The pre-processing component of the previous dataset happened to be the most challenging part, partially due to my computer set-up. Like a few other students, I could only use my keyboard to drive and generate data on the simulator. As many have experienced, keyboard and game pad generate very different types of steering data, as shown by in the following graph (courtesy of Patrick Kern on Slack):
 
@@ -38,7 +38,7 @@ Consequently, one needs a more advanced strategy to tackle this smoothing proble
 
 ![](images/trajectory.png "The Udacity drunk driver in action.")
 
-As one can see on the picture above, the reconstruction is not perfect. If ones can recognise the shape of the track, the different laps do not overlap perfectly. There is an explanation for this error accumulating: I used a very simple physical model to simulate the car turning, which is only realistic at very low speed (as it does not take into account the momentum of the car), and thus does not match completely the more advanced model integrated in the simulator. 
+As one can see on the picture above, the reconstruction is not perfect. If ones can recognise the shape of the track, the different laps do not overlap perfectly. There is an explanation for this error accumulating: I used a very simple physical model to simulate the car turning, which is only realistic at very low speed (as it does not take into account the momentum of the car), and thus does not match completely the more advanced model integrated in the simulator.
 
 The good news is that approximation does not matter for us! Indeed, in order to smooth the steering angle, one only needs to a good local approximation of the trajectory. Indeed, we obtain a smoothed angle output by looking at a time horizon of around 10 frames (i.e. 1 second) and then compute the proper steering angle to be at this position after these 10 frames. Anticipating the car movement over 1 second allows to smooth the steering angle, and remove the pulse behaviour typical of the keyboard output (which is basically a 1 frame anticipating scheme).
 
@@ -95,6 +95,6 @@ Due to the noisy steering angle data, the training has been quite challenging. O
 * Epochs: 20, and then 100. We experimented most of the architectures and hyper-parameters on 20 epochs, and then, after selecting optimal values, fine tuned the network over 100 epochs.
 * L2-regularisation weights: 0.0001. Similarly, quite a standard values, helping regularization of fully connected layers without putting too much emphasized on it at beginning of training.
 
-The dataset was split into 90% for training and 10% for validation. As you can observe on the following graph, the regularization of the network is clear on the validation curve, as very little overfitting appears during training. 
+The dataset was split into 90% for training and 10% for validation. As you can observe on the following graph, the regularization of the network is clear on the validation curve, as very little overfitting appears during training.
 
 ## Results

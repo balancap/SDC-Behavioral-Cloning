@@ -24,9 +24,9 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 16
-LEARNING_RATE = 0.001
-DECAY = 1e-5
-BN_EPSILON = 1.0
+LEARNING_RATE = 0.0001
+DECAY = 1e-6
+BN_EPSILON = 1e-6
 NB_EPOCHS = 20
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
@@ -35,11 +35,11 @@ SEED = 4242
 
 # Color preprocessing.
 BRIGHTNESS_DELTA = 32. / 255.
-CONTRAST_LOWER = 0.3
+CONTRAST_LOWER = 0.5
 CONTRAST_UPPER = 1.7
-SATURATION_LOWER = 0.3
+SATURATION_LOWER = 0.5
 SATURATION_UPPER = 1.7
-HUE_DELTA = 0.2
+HUE_DELTA = 0.1
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -50,6 +50,13 @@ IMG_CHANNELS = 3
 # ============================================================================
 # Load data
 # ============================================================================
+def np_shuffle_pair(x, y):
+    rng_state = np.random.get_state()
+    np.random.shuffle(x)
+    np.random.set_state(rng_state)
+    np.random.shuffle(y)
+
+
 def load_npz(filenames, split=0.9, angle_key='angle'):
     """Load data from Numpy .npz files and rescale images to [0, 1].
     Args:
@@ -62,28 +69,39 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     images = None
     angle = None
     for path in filenames:
+        print('Loading dataset:', path)
         data = np.load(path)
         if images is None:
-            images = data['images'].astype(np.float32) / 255.
+            images = data['images'].astype(np.float32)
             angle = data[angle_key]
         else:
-            images = np.append(images,
-                               data['images'].astype(np.float32) / 255.,
-                               axis=0)
+            # Resize images and append data.
+            shape = images.shape
+            new_shape = (shape[0] + data['images'].shape[0], *shape[1:])
+            images.resize(new_shape)
+            # Image and angle...
+            images[shape[0]:, ...] = data['images']
             angle = np.append(angle, data[angle_key], axis=0)
 
-    # Angle translation.
+        del data
+
+    # Images and angle pre-processing.
+    images /= 255.
     # delta = 6
     # angle = angle[delta:]
     # angle = np.lib.pad(angle, ((0, delta)), 'symmetric')
 
-    # Shuffle and Split datasets.
-    idxes = np.arange(images.shape[0])
-    np.random.shuffle(idxes)
-    idx = int(images.shape[0] * split)
+    # Random shuffling of the dataset (in-place)
+    np.random.seed(SEED)
+    np_shuffle_pair(images, angle)
 
-    return (images[idxes[:idx]], angle[idxes[:idx]],
-            images[idxes[idx:]], angle[idxes[idx:]])
+    # Split datasets.
+    if split < 1.0:
+        idx = int(images.shape[0] * split)
+        return (images[:idx], angle[:idx],
+                images[idx:], angle[idx:])
+    else:
+        return (images, angle, None, None)
 
 
 def save_hyperparameters(ckpt_path):
@@ -217,9 +235,9 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
-    model.add(Dense(10, W_regularizer=l2(L2_WEIGHT)))
+    model.add(Dense(10))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     model.add(keras.layers.advanced_activations.PReLU())
@@ -325,7 +343,6 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
 
 
 def main():
-    np.random.seed(SEED)
     filenames = [
                  # './data/3/dataset.npz',
                  # './data/4/dataset.npz',
