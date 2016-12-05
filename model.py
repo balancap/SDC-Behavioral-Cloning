@@ -30,16 +30,16 @@ BN_EPSILON = 1e-6
 NB_EPOCHS = 20
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
-L2_WEIGHT = 0.00001
+L2_WEIGHT = 0.00005
 SEED = 4242
 
 # Color preprocessing.
 BRIGHTNESS_DELTA = 32. / 255.
-CONTRAST_LOWER = 0.5
+CONTRAST_LOWER = 0.3
 CONTRAST_UPPER = 1.7
-SATURATION_LOWER = 0.5
+SATURATION_LOWER = 0.2
 SATURATION_UPPER = 1.7
-HUE_DELTA = 0.1
+HUE_DELTA = 0.2
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -235,7 +235,7 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(10))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
