@@ -5,7 +5,7 @@ import numpy as np
 import numba
 
 
-# @numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def fbm2d_midpoint(shape, H, stationary=False):
     """Simulation of a 2D fBm (somehow!) using the midpoint algorithm.
 
@@ -27,13 +27,16 @@ def fbm2d_midpoint(shape, H, stationary=False):
     Return:
       Approximation of 2D fBm.
     """
+    # return np.zeros(shape, dtype=np.float32)
+
     # Find the number of levels!
     N = max(shape[0], shape[1])
     nlevels = int(np.ceil(np.log(N-1) / np.log(2)))
 
     # First grid approximation.
-    Z = np.zeros((2, 2), dtype=np.float32)
+    # Z = np.zeros((2, 2), dtype=np.float32)
     if not stationary:
+        Z = np.zeros((2, 2), dtype=np.float32)
         Z[0, 0] = 0.0
         Z[0, 1] = np.random.normal(0., 1.)
         Z[1, 0] = np.random.normal(0., 1.)
@@ -43,7 +46,7 @@ def fbm2d_midpoint(shape, H, stationary=False):
         # Z[0, 1] = np.random.normal(0., 1.)
         # Z[1, 0] = np.random.normal(0., 1.)
         # Z[1, 1] = np.random.normal(0., 1.)
-        Z = np.random.randn(2, 2)
+        Z = np.random.randn(2, 2).astype(np.float32)
 
     for lv in range(1, nlevels+1):
         Y = np.zeros((2**lv+1, 2**lv+1), dtype=np.float32)
@@ -108,6 +111,8 @@ def surface_reflect(data, vmin, vmax):
     """Reflect a random surface on min and max values.
     """
     # while np.min(data) < vmin or np.max(data) > vmax:
+    data = vmin + np.abs(data - vmin)
+    data = vmax - np.abs(vmax - data)
     data = vmin + np.abs(data - vmin)
     data = vmax - np.abs(vmax - data)
 

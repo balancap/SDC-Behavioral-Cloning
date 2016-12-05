@@ -25,26 +25,26 @@ from random_surfaces import fbm2d_midpoint, surface_reflect
 # ============================================================================
 # Additional random image transform.
 # ============================================================================
-def random_brightness(image, max_delta, H=0.6, seed=None):
+def random_brightness(image, max_delta, H=0.4, seed=None):
     rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.5
     rsurf = surface_reflect(rsurf, -max_delta, max_delta)
     # delta = random.uniform(-max_delta, max_delta)
     return adjust_brightness(image, rsurf)
 
 
-def random_contrast(image, lower, upper, H=0.6, seed=None):
-    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 1.5
+def random_contrast(image, lower, upper, H=0.4, seed=None):
+    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
     rsurf = surface_reflect(rsurf + 1, lower, upper)
     # Generate an a float in [lower, upper]
     # contrast_factor = random.uniform(lower, upper)
     return adjust_contrast(image, rsurf)
 
 
-def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.6, seed=None):
-    rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 4.5
+def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.4, seed=None):
+    rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
     rsurf_sat = surface_reflect(rsurf_sat + 1, sat_lower, sat_upper)
 
-    rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.5
+    rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.2
     rsurf_hue = surface_reflect(rsurf_hue, -max_hue, max_hue)
 
     # saturation_factor = random.uniform(sat_lower, sat_upper)

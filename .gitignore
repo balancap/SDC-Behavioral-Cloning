@@ -10,3 +10,4 @@ img/
 *.h5
 *.json
 nohup.out
+logs2/

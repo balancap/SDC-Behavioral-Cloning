@@ -30,7 +30,7 @@ BN_EPSILON = 1e-6
 NB_EPOCHS = 40
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
-L2_WEIGHT = 0.00005
+L2_WEIGHT = 0.00001
 SEED = 4242
 
 # Color preprocessing.
@@ -215,7 +215,7 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     # model.add(Dense(1000, W_regularizer=l2(L2_WEIGHT)))
     # # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -228,14 +228,14 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(50, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(10))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -335,7 +335,7 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
                         validation_data=(X_test, y_test),
                         callbacks=callbacks,
                         max_q_size=50,
-                        nb_worker=8,
+                        nb_worker=16,
                         pickle_safe=True)
 
     # Save model parameters.
