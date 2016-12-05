@@ -24,10 +24,10 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 16
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.00001
 DECAY = 1e-6
 BN_EPSILON = 1e-6
-NB_EPOCHS = 20
+NB_EPOCHS = 40
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
 L2_WEIGHT = 0.00005
@@ -37,7 +37,7 @@ SEED = 4242
 BRIGHTNESS_DELTA = 32. / 255.
 CONTRAST_LOWER = 0.3
 CONTRAST_UPPER = 1.7
-SATURATION_LOWER = 0.2
+SATURATION_LOWER = 0.3
 SATURATION_UPPER = 1.7
 HUE_DELTA = 0.2
 
@@ -326,15 +326,15 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
                                      sample_weight=y_weights,
-                                     # save_to_dir='./img/',
-                                     # save_format='png',
+                                     save_to_dir='./img/',
+                                     save_format='png',
                                      shuffle=True),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCHS,
                         verbose=1,
                         validation_data=(X_test, y_test),
                         callbacks=callbacks,
-                        max_q_size=30,
+                        max_q_size=50,
                         nb_worker=8,
                         pickle_safe=True)
 

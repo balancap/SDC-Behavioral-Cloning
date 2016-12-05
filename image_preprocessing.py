@@ -19,25 +19,37 @@ import threading
 
 from keras import backend as K
 
+from random_surfaces import fbm2d_midpoint, surface_reflect
+
 
 # ============================================================================
 # Additional random image transform.
 # ============================================================================
-def random_brightness(image, max_delta, seed=None):
-    delta = random.uniform(-max_delta, max_delta)
-    return adjust_brightness(image, delta)
+def random_brightness(image, max_delta, H=0.5, seed=None):
+    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.5
+    rsurf = surface_reflect(rsurf, -max_delta, max_delta)
+    # delta = random.uniform(-max_delta, max_delta)
+    return adjust_brightness(image, rsurf)
 
 
-def random_contrast(image, lower, upper, seed=None):
+def random_contrast(image, lower, upper, H=0.5, seed=None):
+    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
+    rsurf = surface_reflect(rsurf + 1, lower, upper)
     # Generate an a float in [lower, upper]
-    contrast_factor = random.uniform(lower, upper)
-    return adjust_contrast(image, contrast_factor)
+    # contrast_factor = random.uniform(lower, upper)
+    return adjust_contrast(image, rsurf)
 
 
-def random_saturation_hue(image, sat_lower, sat_upper, max_hue, seed=None):
-    saturation_factor = random.uniform(sat_lower, sat_upper)
-    hue_delta = random.uniform(-max_hue, max_hue)
-    return adjust_saturation_hue(image, saturation_factor, hue_delta)
+def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.5, seed=None):
+    rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
+    rsurf_sat = surface_reflect(rsurf_sat + 1, sat_lower, sat_upper)
+
+    rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.5
+    rsurf_hue = surface_reflect(rsurf_hue, -max_hue, max_hue)
+
+    # saturation_factor = random.uniform(sat_lower, sat_upper)
+    # hue_delta = random.uniform(-max_hue, max_hue)
+    return adjust_saturation_hue(image, rsurf_sat, rsurf_hue)
 
 
 def adjust_brightness(image, delta):
@@ -46,7 +58,10 @@ def adjust_brightness(image, delta):
     For regular images, `delta` should be in the range `[0,1)`, as it is
     added to the image where pixel values are in the `[0,1)` range.
     """
-    out = np.clip(image + delta, 0.0, 1.0)
+    out = np.zeros_like(image)
+    for i in range(3):
+        out[:, :, i] = image[:, :, i] + delta
+    out = np.clip(out, 0.0, 1.0)
     return out
 
 

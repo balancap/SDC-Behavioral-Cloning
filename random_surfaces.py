@@ -85,5 +85,16 @@ def fbm2d_midpoint(shape, H, stationary=False):
     else:
         x = (Z.shape[0] - shape[0]) // 2
         y = (Z.shape[1] - shape[1]) // 2
-        Z = Z[x:shape[0], y:shape[1]]
+        Z = Z[x:x+shape[0], y:y+shape[1]]
     return Z
+
+
+# @numba.jit(nopython=True, cache=True)
+def surface_reflect(data, vmin, vmax):
+    """Reflect a random surface on min and max values.
+    """
+    # while np.min(data) < vmin or np.max(data) > vmax:
+    data = vmin + np.abs(data - vmin)
+    data = vmax - np.abs(vmax - data)
+
+    return data
