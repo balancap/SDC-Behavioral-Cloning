@@ -5,6 +5,25 @@ import numpy as np
 import numba
 
 
+def hyperplane_rand(shape):
+    """Random hyperplane in the 2D plane. Random uniform output, symmetric
+    between the two planes.
+    """
+    # Random straight line.
+    x1 = np.random.randint(0, shape[0])
+    y1 = np.random.randint(0, shape[1])
+    a = np.tan(np.random.rand(1) * np.pi)
+
+    # Grid.
+    yv, xv = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
+    bsurf = (a * (xv - x1) + y1) <= yv
+
+    # Random surface.
+    rand_surf = bsurf.astype(np.float32) * 2 - 1
+    rand_surf = rand_surf * np.random.uniform(-1., 1.)
+    return rand_surf
+
+
 @numba.jit(nopython=True, cache=True)
 def fbm2d_midpoint(shape, H, stationary=False):
     """Simulation of a 2D fBm (somehow!) using the midpoint algorithm.

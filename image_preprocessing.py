@@ -19,33 +19,39 @@ import threading
 
 from keras import backend as K
 
-from random_surfaces import fbm2d_midpoint, surface_reflect
+from random_surfaces import fbm2d_midpoint, surface_reflect, hyperplane_rand
 
 
 # ============================================================================
 # Additional random image transform.
 # ============================================================================
-def random_brightness(image, max_delta, H=0.4, seed=None):
-    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.5
-    rsurf = surface_reflect(rsurf, -max_delta, max_delta)
+def random_brightness(image, max_delta, H=0.7, seed=None):
+    # rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.3
+    # rsurf = surface_reflect(rsurf, -max_delta, max_delta)
+    rsurf = hyperplane_rand(image.shape[0:2]) * max_delta
+
     # delta = random.uniform(-max_delta, max_delta)
     return adjust_brightness(image, rsurf)
 
 
-def random_contrast(image, lower, upper, H=0.4, seed=None):
-    rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
-    rsurf = surface_reflect(rsurf + 1, lower, upper)
+def random_contrast(image, lower, upper, H=0.7, seed=None):
+    # rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 1. + 1
+    # rsurf = surface_reflect(rsurf + 1, lower, upper)
+    rsurf = (1 + hyperplane_rand(image.shape[0:2])) * 0.7
+
     # Generate an a float in [lower, upper]
     # contrast_factor = random.uniform(lower, upper)
     return adjust_contrast(image, rsurf)
 
 
-def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.4, seed=None):
-    rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 2
-    rsurf_sat = surface_reflect(rsurf_sat + 1, sat_lower, sat_upper)
+def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.7, seed=None):
+    # rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 1. + 1
+    # rsurf_sat = surface_reflect(rsurf_sat + 1, sat_lower, sat_upper)
+    rsurf_sat = (1 + hyperplane_rand(image.shape[0:2])) * 0.7
 
-    rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.2
-    rsurf_hue = surface_reflect(rsurf_hue, -max_hue, max_hue)
+    # rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.15
+    # rsurf_hue = surface_reflect(rsurf_hue, -max_hue, max_hue)
+    rsurf_hue = hyperplane_rand(image.shape[0:2]) * max_hue
 
     # saturation_factor = random.uniform(sat_lower, sat_upper)
     # hue_delta = random.uniform(-max_hue, max_hue)
@@ -75,7 +81,7 @@ def adjust_contrast(image, contrast_factor):
     out = np.zeros_like(image)
     for i in range(3):
         m = np.mean(image[:, :, i])
-        out[:, :, i] = (image[:, :, i] - m) * contrast_factor + m
+        out[:, :, i] = (image[:, :, i] - m) * np.abs(contrast_factor) + m
     out = np.clip(out, 0.0, 1.0)
     return out
 
@@ -87,7 +93,7 @@ def adjust_saturation_hue(image, saturation_factor, hue_delta):
     """
     img_hsv = color.rgb2hsv(image)
     # Adjust saturation and hue channels.
-    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * saturation_factor, 0.0, 1.0)
+    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * np.abs(saturation_factor), 0.0, 1.0)
     img_hsv[:, :, 0] = np.mod(img_hsv[:, :, 0] + 1. + hue_delta, 1.0)
     # Back to RGB mod.
     return color.hsv2rgb(img_hsv)
