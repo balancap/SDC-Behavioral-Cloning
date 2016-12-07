@@ -25,21 +25,21 @@ from image_preprocessing import ImageDataGenerator
 # General parameters.
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00001
-DECAY = 1e-6
+DECAY = 1e-7
 BN_EPSILON = 1e-6
 NB_EPOCHS = 100
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
-L2_WEIGHT = 0.00005
+L2_WEIGHT = 0.00001
 SEED = 4242
 
 # Color preprocessing.
 BRIGHTNESS_DELTA = 32. / 255.
 CONTRAST_LOWER = 0.3
-CONTRAST_UPPER = 1.7
+CONTRAST_UPPER = 2.
 SATURATION_LOWER = 0.3
-SATURATION_UPPER = 1.7
-HUE_DELTA = 0.2
+SATURATION_UPPER = 2.
+HUE_DELTA = 0.15
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -145,6 +145,7 @@ def cnn_model(shape):
     # First 5x5 convolutions layers.
     model.add(Convolution2D(24, 5, 5,
                             subsample=(2, 2),
+                            W_regularizer=l2(L2_WEIGHT),
                             # init='normal',
                             # input_shape=shape,
                             border_mode='valid'))
@@ -155,6 +156,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(36, 5, 5,
                             subsample=(2, 2),
+                            W_regularizer=l2(L2_WEIGHT),
                             # init='normal',
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
@@ -174,6 +176,7 @@ def cnn_model(shape):
     model.add(Convolution2D(54, 5, 5,
                             subsample=(2, 2),
                             # init='normal',
+                            W_regularizer=l2(L2_WEIGHT),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -184,6 +187,7 @@ def cnn_model(shape):
     model.add(Convolution2D(54, 5, 5,
                             # subsample=(2, 2),
                             # init='normal',
+                            W_regularizer=l2(L2_WEIGHT),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -192,6 +196,7 @@ def cnn_model(shape):
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             # init='normal',
+                            W_regularizer=l2(L2_WEIGHT),
                             border_mode='valid'))
     model.add(Activation('relu'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
@@ -199,6 +204,7 @@ def cnn_model(shape):
 
     model.add(Convolution2D(80, 3, 3,
                             # init='normal',
+                            W_regularizer=l2(L2_WEIGHT),
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
@@ -215,7 +221,7 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     # model.add(Dense(1000, W_regularizer=l2(L2_WEIGHT)))
     # # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -326,8 +332,8 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
     model.fit_generator(datagen.flow(X_train, y_train,
                                      batch_size=BATCH_SIZE,
                                      sample_weight=y_weights,
-                                     save_to_dir='./img/',
-                                     save_format='png',
+                                     # save_to_dir='./img/',
+                                     # save_format='png',
                                      shuffle=True),
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=NB_EPOCHS,

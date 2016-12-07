@@ -37,7 +37,7 @@ def random_brightness(image, max_delta, H=0.7, seed=None):
 def random_contrast(image, lower, upper, H=0.7, seed=None):
     # rsurf = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 1. + 1
     # rsurf = surface_reflect(rsurf + 1, lower, upper)
-    rsurf = (1 + hyperplane_rand(image.shape[0:2])) * 0.7
+    rsurf = (1 + hyperplane_rand(image.shape[0:2])) * (upper - 1.)
 
     # Generate an a float in [lower, upper]
     # contrast_factor = random.uniform(lower, upper)
@@ -47,7 +47,7 @@ def random_contrast(image, lower, upper, H=0.7, seed=None):
 def random_saturation_hue(image, sat_lower, sat_upper, max_hue, H=0.7, seed=None):
     # rsurf_sat = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 1. + 1
     # rsurf_sat = surface_reflect(rsurf_sat + 1, sat_lower, sat_upper)
-    rsurf_sat = (1 + hyperplane_rand(image.shape[0:2])) * 0.7
+    rsurf_sat = (1 + hyperplane_rand(image.shape[0:2])) * (sat_upper - 1.)
 
     # rsurf_hue = fbm2d_midpoint(image.shape[0:2], H, stationary=True) * 0.15
     # rsurf_hue = surface_reflect(rsurf_hue, -max_hue, max_hue)
