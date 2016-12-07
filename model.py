@@ -25,21 +25,21 @@ from image_preprocessing import ImageDataGenerator
 # General parameters.
 BATCH_SIZE = 16
 LEARNING_RATE = 0.00001
-DECAY = 1e-7
+DECAY = 1e-6
 BN_EPSILON = 1e-6
-NB_EPOCHS = 100
+NB_EPOCHS = 100.
 ANGLE_KEY = 'angle_med10'
-ANGLE_WEIGHT = 10.0
+ANGLE_WEIGHT = 20.0
 L2_WEIGHT = 0.00001
 SEED = 4242
 
 # Color preprocessing.
-BRIGHTNESS_DELTA = 32. / 255.
+BRIGHTNESS_DELTA = 80. / 255.
 CONTRAST_LOWER = 0.3
-CONTRAST_UPPER = 2.
+CONTRAST_UPPER = 1.7
 SATURATION_LOWER = 0.3
-SATURATION_UPPER = 2.
-HUE_DELTA = 0.15
+SATURATION_UPPER = 1.7
+HUE_DELTA = 0.2
 
 # Image dimensions
 IMG_ROWS, IMG_COLS = 160, 320
@@ -221,7 +221,7 @@ def cnn_model(shape):
     model.add(Flatten())
     # model.add(Dense(1000))
     # model.add(Activation('relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     # model.add(Dense(1000, W_regularizer=l2(L2_WEIGHT)))
     # # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
@@ -364,6 +364,7 @@ def main():
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
     # filenames = ['./data/test3/dataset.npz']
+    # filenames = ['./data/small_test/dataset.npz']
     # filenames = ['./data/50hz_1/dataset.npz']
     # filenames = [
     #              './data/q3_clean/dataset.npz',

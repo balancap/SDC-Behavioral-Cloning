@@ -16,7 +16,7 @@ import matplotlib.image as mpimg
 
 # IMG_SHAPE = (160, 320, 3)
 IMG_SHAPE = (105, 320, 3)
-SUBSAMPLING = 1
+SUBSAMPLING = 10
 
 MASK_PRE_FRAMES = 1
 MASK_POST_FRAMES = 0
@@ -570,15 +570,15 @@ def create_hdf5(path):
 def main():
     datasets = [
         # ('./data/5/', None),
-        ('./data/q3_clean/', None, (-2, 2)),
-        ('./data/q3_clean2/', None, (-2, 2)),
+        ('./data/q3_clean/', None, (-1.5, 1.5)),
+        ('./data/q3_clean2/', None, (-1.5, 1.5)),
         ('./data/q3_recover_left/', mask_positive, (-2, 0)),
         ('./data/q3_recover_left2/', mask_positive, (-2, 0)),
         ('./data/q3_recover_right/', mask_negative, (0, 2)),
         ('./data/q3_recover_right2/', mask_negative, (0, 2)),
     ]
     # datasets = [
-    #     ('./data/test3/', None),
+    #     ('./data/small_test/', None, (-2, 2)),
     # ]
 
     for d in datasets:
