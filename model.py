@@ -30,7 +30,7 @@ BN_EPSILON = 1e-6
 NB_EPOCHS = 100.
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 20.0
-L2_WEIGHT = 0.00001
+L2_WEIGHT = 0.00005
 SEED = 4242
 
 # Color preprocessing.
@@ -198,8 +198,8 @@ def cnn_model(shape):
                             # init='normal',
                             W_regularizer=l2(L2_WEIGHT),
                             border_mode='valid'))
-    model.add(Activation('relu'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
+    model.add(Activation('relu'))
     print('Layer 4: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(80, 3, 3,
@@ -234,7 +234,7 @@ def cnn_model(shape):
     # model.add(Activation('relu'))
     # model.add(keras.layers.advanced_activations.ELU(alpha=1.0))
     model.add(keras.layers.advanced_activations.PReLU())
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Dense(50, W_regularizer=l2(L2_WEIGHT)))
     # model.add(BatchNormalization(mode=1, epsilon=BN_EPSILON, momentum=0.999))
