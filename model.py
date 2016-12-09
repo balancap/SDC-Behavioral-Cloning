@@ -23,15 +23,18 @@ from image_preprocessing import ImageDataGenerator
 
 
 # General parameters.
-BATCH_SIZE = 16
-LEARNING_RATE = 0.00001
+BATCH_SIZE = 4
+LEARNING_RATE = 0.0001
 DECAY = 1e-6
 BN_EPSILON = 1e-6
 NB_EPOCHS = 100.
 ANGLE_KEY = 'angle_med10'
-ANGLE_WEIGHT = 20.0
+ANGLE_WEIGHT = 10.0
 L2_WEIGHT = 0.00005
 SEED = 4242
+
+FINE_TUNE = 'logs/model.h5'
+# FINE_TUNE = None
 
 # Color preprocessing.
 BRIGHTNESS_DELTA = 80. / 255.
@@ -46,6 +49,16 @@ IMG_ROWS, IMG_COLS = 160, 320
 IMG_ROWS, IMG_COLS = 105, 320
 IMG_CHANNELS = 3
 
+# Datasets to use
+DATASETS = [
+            ('./data/q3_recover_left/dataset.npz', 'angle_med6'),
+            ('./data/q3_recover_right/dataset.npz', 'angle_med6'),
+            ('./data/q3_recover_left2/dataset.npz', 'angle_med6'),
+            ('./data/q3_recover_right2/dataset.npz', 'angle_med6'),
+            ('./data/q3_clean/dataset.npz', 'angle_med10'),
+            ('./data/q3_clean2/dataset.npz', 'angle_med10'),
+           ]
+
 
 # ============================================================================
 # Load data
@@ -57,10 +70,11 @@ def np_shuffle_pair(x, y):
     np.random.shuffle(y)
 
 
-def load_npz(filenames, split=0.9, angle_key='angle'):
+def load_npz(datasets, split=0.9):
     """Load data from Numpy .npz files and rescale images to [0, 1].
+
     Args:
-      filenames: List of dataset filenames.
+      filenames: List of dataset: (filename, angle_key).
       split: Split proportion between train / validation datasets.
     Return:
       (X_train, y_train, X_test, y_test) Numpy arrays.
@@ -68,7 +82,7 @@ def load_npz(filenames, split=0.9, angle_key='angle'):
     # Load data from numpy files.
     images = None
     angle = None
-    for path in filenames:
+    for path, angle_key in datasets:
         print('Loading dataset:', path)
         data = np.load(path)
         if images is None:
@@ -148,9 +162,11 @@ def cnn_model(shape):
                             W_regularizer=l2(L2_WEIGHT),
                             # init='normal',
                             # input_shape=shape,
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
     print('Layer 1: ', model.layers[-1].output_shape)
 
@@ -158,9 +174,11 @@ def cnn_model(shape):
                             subsample=(2, 2),
                             W_regularizer=l2(L2_WEIGHT),
                             # init='normal',
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
     print('Layer 2: ', model.layers[-1].output_shape)
 
@@ -177,9 +195,11 @@ def cnn_model(shape):
                             subsample=(2, 2),
                             # init='normal',
                             W_regularizer=l2(L2_WEIGHT),
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     # model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), border_mode='same'))
 
     print('Layer 3: ', model.layers[-1].output_shape)
@@ -188,26 +208,32 @@ def cnn_model(shape):
                             # subsample=(2, 2),
                             # init='normal',
                             W_regularizer=l2(L2_WEIGHT),
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 3b: ', model.layers[-1].output_shape)
 
     # 3x3 Convolutions.
     model.add(Convolution2D(64, 3, 3,
                             # init='normal',
                             W_regularizer=l2(L2_WEIGHT),
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 4: ', model.layers[-1].output_shape)
 
     model.add(Convolution2D(80, 3, 3,
                             # init='normal',
                             W_regularizer=l2(L2_WEIGHT),
+                            bias=False,
                             border_mode='valid'))
     model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     model.add(Activation('relu'))
+    # model.add(BatchNormalization(epsilon=BN_EPSILON, momentum=0.999))
     print('Layer 5: ', model.layers[-1].output_shape)
 
     # model.add(Convolution2D(96, 3, 3,
@@ -274,6 +300,10 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
 
     # CNN Model.
     model = cnn_model(X_train.shape[1:])
+    # Fine tuning model?
+    if FINE_TUNE:
+        model.load_weights(FINE_TUNE)
+
     # Train the model using Adam.
     # optimizer = SGD(lr=LEARNING_RATE, decay=DECAY, momentum=0.9, nesterov=True)
     # optimizer = keras.optimizers.RMSprop(lr=LEARNING_RATE, decay=DECAY,
@@ -349,18 +379,6 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
 
 
 def main():
-    filenames = [
-                 # './data/3/dataset.npz',
-                 # './data/4/dataset.npz',
-                 './data/q3_recover_left/dataset.npz',
-                 './data/q3_recover_right/dataset.npz',
-                 './data/q3_recover_left2/dataset.npz',
-                 './data/q3_recover_right2/dataset.npz',
-                 './data/q3_clean/dataset.npz',
-                 './data/q3_clean2/dataset.npz',
-                 # './data/5/dataset.npz'
-                 ]
-
     # filenames = ['./data/7/dataset.npz',
     #              './data/8/dataset.npz']
     # filenames = ['./data/test3/dataset.npz']
@@ -374,9 +392,7 @@ def main():
 
     ckpt_path = './logs/'
     # Load dataset.
-    (X_train, y_train, X_test, y_test) = load_npz(filenames,
-                                                  split=0.9,
-                                                  angle_key=ANGLE_KEY)
+    (X_train, y_train, X_test, y_test) = load_npz(DATASETS, split=0.9)
     # Save hyper-parameters.
     save_hyperparameters(ckpt_path)
     # Train model.

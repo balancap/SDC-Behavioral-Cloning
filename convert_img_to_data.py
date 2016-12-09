@@ -572,10 +572,10 @@ def main():
         # ('./data/5/', None),
         ('./data/q3_clean/', None, (-1.5, 1.5)),
         ('./data/q3_clean2/', None, (-1.5, 1.5)),
-        ('./data/q3_recover_left/', mask_positive, (-2, 0)),
-        ('./data/q3_recover_left2/', mask_positive, (-2, 0)),
-        ('./data/q3_recover_right/', mask_negative, (0, 2)),
-        ('./data/q3_recover_right2/', mask_negative, (0, 2)),
+        ('./data/q3_recover_left/', mask_positive, (-1.5, 0.5)),
+        ('./data/q3_recover_left2/', mask_positive, (-1.5, 0.5)),
+        ('./data/q3_recover_right/', mask_negative, (-0.5, 1.5)),
+        ('./data/q3_recover_right2/', mask_negative, (-0.5, 1.5)),
     ]
     # datasets = [
     #     ('./data/small_test/', None, (-2, 2)),
