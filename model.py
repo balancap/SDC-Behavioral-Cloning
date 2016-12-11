@@ -24,10 +24,10 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 4
-LEARNING_RATE = 0.0001
-DECAY = 1e-6
+LEARNING_RATE = 0.00001
+DECAY = 1e-7
 BN_EPSILON = 1e-6
-NB_EPOCHS = 100.
+NB_EPOCHS = 50.
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
 L2_WEIGHT = 0.00005
