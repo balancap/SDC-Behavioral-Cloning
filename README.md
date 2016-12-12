@@ -79,9 +79,9 @@ As previously presented, the network architecture I used is highly inspired by t
 | Convolution     |  5x5 | 2 | VALID  | - | 24 | 46x158 |
 | Convolution     |  5x5 | 2 | VALID | - | 36 | 21x77 |
 | Convolution     |  5x5 | 2 | VALID | - | 54 | 9x37 |
+| Convolution     |  5x5 | 1 | VALID | - | 54 | 9x37 |
 | Convolution     |  3x3 | 1 | VALID | - | 64 | 7x35 |
 | Convolution     |  3x3 | 1 | VALID | - | 80 | 5x33 |
-| Convolution     |  3x3 | 1 | VALID | - | 96 | 3x31 |
 | Flatten     | -    | - | - | - | - | 8928 |
 | Dropout p=0.5     | -    | - | - | - | - | 8928 |
 | Fully Connected     |  - | - | - | - | - | 100 |
@@ -90,19 +90,31 @@ As previously presented, the network architecture I used is highly inspired by t
 | Fully Connected     |  - | - | - | - | - | 10 |
 | Fully Connected     |  - | - | - | - | - | 1 |
 
-Every convolution layer in the network is followed by a Batch Normalisation layer in order to help training speed, and a ReLU activation layer. Fully Connected layers are followed by ELU activations in order to prevent dead neurons to appear during training (neurons with constant zero output). Note that by essence, Batch Normalisation layers do not need to be followed by ELU activations (the normalisation forces the activation of the output for certains values).
+Every convolution layer in the network is followed by a Batch Normalisation layer in order to help training speed, and a ReLU activation layer. Fully Connected layers are followed by PReLU activations (see this [paper](https://arxiv.org/abs/1502.01852)) in order to prevent dead neurons to appear during training (neurons with constant zero output). More classic ELU activation functions also happen to prevent this downside. Note that by essence, Batch Normalisation layers do not need to be followed by PReLU/ELU activations (the normalisation forcing the activation of the output for certains values).
 
 There are only very few modifications compared to the original Nvidia paper. Since my input image was slightly larger, I decided to add an additional 3x3 convolution layer. Furthermore, I also decided to increase slightly the depth of every layer. Overall, the network still has a very similar architecture, and in particular, remains light enough to be run in real time in simulation (or reality within a couple months!)
 
 ## Training
 
-Due to the noisy steering angle data, the training has been quite challenging. Of course smoothing the data helped a lot for getting better results. In addition to that, we use more classic regularisation procedure to obtain a more robust model: dropout and L2-regularisation of fully connected layers. More specifically, here are the hyper-parameters that we ended up chosing:
+Due to the noisy steering angle data, the training has been quite challenging. Of course smoothing the data helped a lot for getting better results. In addition to that, we use more classic regularization procedure to obtain a more robust model: dropout and L2-regularisation of weights (both convolutional and fully connected layers). More specifically, here are the hyper-parameters I ended up choosing:
 * Optimizer: Adam. The latter seems quite common in the nowadays literature, being quite robust.
-* Batch size: 16. It appeared to us that smaller batch size helped the training, avoiding being trapped in local minima. As it is known, this parameter is always a trade off between the gradient regularisation of higher batch size, and the stochastic effect of smaller sizes which helps avoiding local minima.
-* Learning rate: 0.0001. Similarly, it seemed to be the optimal trade-off between large initial decrease of the loss function, and optimal loss after training. We use a polynomial decay of this learning rate, with a constant of 1e-5.
-* Epochs: 20, and then 100. We experimented most of the architectures and hyper-parameters on 20 epochs, and then, after selecting optimal values, fine tuned the network over 100 epochs.
-* L2-regularisation weights: 0.0001. Similarly, quite a standard values, helping regularization of fully connected layers without putting too much emphasized on it at beginning of training.
+* Loss function: Mean Squared Error, the usual suspect for regression tasks!
+* Batch size: 16. It appeared that smaller batch sizes help the training, avoiding being trapped in local minima (typically, 32 or 64 would lead to a constant steering angle output). As it is known, this parameter is always a trade off between the gradient regularisation of higher batch size, and the stochastic effect of smaller sizes which helps avoiding local minima. Note that even batch sizes of 4 or 8 happened to work well in the case of this project.
+* Learning rate: 0.0001. Similarly, it seems to be the optimal trade-off between a large initial decrease of the loss function, and the final loss after 20 epochs of training. We use a polynomial decay of this learning rate, with a constant rate of 1e-6.
+* Epochs: 20, and then 100. We experimented most of the architectures and hyper-parameters on 20 epochs, and then, after selecting optimal values, we fine tuned the network over 100 epochs. The latter fine-tuning happened to be valuable for regularizing the network and obtain a more robust model.
+* L2-regularisation weights: 1e-5. Similarly, quite a standard value, helping regularization of fully connected layers without putting too much emphasized on it at beginning of training.
 
-The dataset was split into 90% for training and 10% for validation. As you can observe on the following graph, the regularization of the network is clear on the validation curve, as very little overfitting appears during training.
+The dataset was split into 90% for training and 10% for validation. As you can observe on the following graph, the regularization aspect is clear on the validation curve, as very little over-fitting appears during training.
 
 ## Results
+
+On a quantitative level, the previous graph clearly displays a good training profile: constant decrease of the loss function on both the training and validation datasets. In addition, we also computed the Mean Absolute Error, which is more physically interpretable: at the end of training, the latter is around 0.01 radians (around 0.6 degrees), which is an acceptable error margin for a driver!
+
+On a more qualitative level, we experimented the final model on the tracks 1 and 2. Note that the tests were made using the **highest graphic setting**. In addition, I multiply the output of the network by a constant factor 1.7. This is due to the fact that the simplified physical model used to pre-process that steering angle tends to under-estimate the real angle by not considering the inertia of the car, and thus the output given by the network has a similar flaw. The determination of this factor is purely experimental, even though we observed that any value between 1.3 and 2. happens to be working fine (larger values then tend to favorise an oscillating behavior of the car).
+
+On the first track, the model clearly behaves well, performing smooth turns and staying on the middle trajectory most of the time. In addition, it recovers properly when the car happens to side-track a bit.
+
+A more interesting experiment was of course to test the network on the second track, which was **not used in training**. Such a test clearly shows if the neural generalizes well to other environment and learnt the correct features of a road, or if it only happened to learn "by heart" the good trajectory on the first track. Interestingly, my model performs quite well on Track 2, being able to turn correctly at full speed on almostll the complete track. For sure, the behavior is not as smooth than on track 1, which can be expected as Track 2 is more challenging in terms of trajectory. In addition, the more erratic behaviour is also due to the initial keyboard input which does not to generate recovery data as smooth as a game pad. 
+
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/tV6S6-51oIY/0.jpg)](http://www.youtube.com/watch?v=tV6S6-51oIY)
+
