@@ -24,13 +24,13 @@ from image_preprocessing import ImageDataGenerator
 
 # General parameters.
 BATCH_SIZE = 4
-LEARNING_RATE = 0.00001
-DECAY = 1e-7
+LEARNING_RATE = 0.0001
+DECAY = 1e-6
 BN_EPSILON = 1e-6
-NB_EPOCHS = 50.
+NB_EPOCHS = 100.
 ANGLE_KEY = 'angle_med10'
 ANGLE_WEIGHT = 10.0
-L2_WEIGHT = 0.00005
+L2_WEIGHT = 0.00001
 SEED = 4242
 
 FINE_TUNE = 'logs/model.h5'
@@ -302,6 +302,7 @@ def train_model(X_train, y_train, X_test, y_test, ckpt_path='./'):
     model = cnn_model(X_train.shape[1:])
     # Fine tuning model?
     if FINE_TUNE:
+        print('Fine tuning model:', FINE_TUNE)
         model.load_weights(FINE_TUNE)
 
     # Train the model using Adam.
